@@ -121,12 +121,12 @@
                             <select class="border border-emerald-300 dark:border-blue-600 rounded-lg p-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500 dark:focus:ring-blue-500 transition-all duration-200">
                                 <option>10</option>
                             </select>
+                            <Input 
+                                type="text" 
+                                placeholder="Buscar..." 
+                                class="w-1/4 border-emerald-300 dark:border-blue-600 rounded-lg p-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500 dark:focus:ring-blue-500 transition-all duration-200"
+                            />
                         </div>
-                        <Input 
-                            type="text" 
-                            placeholder="Buscar..." 
-                            class="w-1/4 border-emerald-300 dark:border-blue-600 rounded-lg p-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500 dark:focus:ring-blue-500 transition-all duration-200"
-                        />
                     </div>
                     <Table>
                         <TableHeader>
@@ -189,8 +189,9 @@
 
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription } from '@/components/ui/dialog'; // Added DialogDescription
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Input } from '@/components/ui/input'; // Added explicit import for Input
 import { ref } from 'vue';
 import { MovementResource } from '../interface/Movement';
 import AddProductModal from './addProductModal.vue';
