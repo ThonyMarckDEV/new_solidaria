@@ -5,7 +5,11 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
+<<<<<<< HEAD
 import { BookOpen, Box, Building, Folder, LayoutGrid, Map, PackageCheck, Syringe, Truck, UserCog, Users } from 'lucide-vue-next';
+=======
+import { BookOpen,ShieldCheck,Folder,LayoutGrid, Syringe, Box, Building, Map, PackageCheck, Truck, UserCog, Users } from 'lucide-vue-next';
+>>>>>>> 10e74f060df57917a581cdf2a244ee76e96f28ed
 import AppLogo from './AppLogo.vue';
 
 const mainNavItems: NavItem[] = [
@@ -91,6 +95,11 @@ const mainNavItems4: NavItem[] = [
         title: 'Roles',
         href: '/panel/roles',
         icon: UserCog,
+    },
+    {
+        title: 'Permisos',
+        href: '/panel/permissions',
+        icon: ShieldCheck,
     },
     {
         title: 'Zonas',

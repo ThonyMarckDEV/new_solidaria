@@ -13,7 +13,7 @@ class ZoneSeeder extends Seeder
      */
     public function run(): void
     {
-        ZOne::create([
+        Zone::create([
             'name' => 'ALMACEN',
             'status' => true,
         ]);
