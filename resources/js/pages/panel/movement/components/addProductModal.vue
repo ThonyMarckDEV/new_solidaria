@@ -158,7 +158,23 @@ import { toTypedSchema } from '@vee-validate/zod';
 import { useForm } from 'vee-validate';
 import * as z from 'zod';
 import { ref } from 'vue';
-import { ProductResource } from '@/pages/panel/product/interface/Product';
+
+export interface ProductResource {
+  id: number;
+  name: string;
+  composition: string;
+  presentation: string;
+  form_farm: string;
+  barcode: string;
+  laboratory_id: number;
+  laboratory: string;
+  category_id: number;
+  category: string;
+  fraction: number;
+  state_fraction: boolean;
+  state_igv: boolean;
+  state: boolean;
+}
 
 // Props and Emits
 const props = defineProps<{
@@ -231,11 +247,11 @@ const onProductSelect = (product: ProductResource | null) => {
 // Handle boxes input
 const handleBoxesInput = () => {
   const boxes = values.boxes || 0;
-  setFieldValue('boxes', Math.max(0, boxes));
+  setFieldValue('boxes', Math.max(0, boxes)); 
   updateUnitPrice();
 };
 
-// Handle fractions input with validation and conversion
+
 const handleFractionsInput = () => {
   if (!selectedProduct.value) return;
 
@@ -250,29 +266,35 @@ const handleFractionsInput = () => {
   } else if (fractions > maxFractions) {
     setFieldValue('fractions', maxFractions);
   } else if (fractions < 0) {
-    setFieldValue('fractions', 0); 
+    setFieldValue('fractions', 0);
   }
 
   updateUnitPrice();
 };
 
-// Update unit price based on total price and quantity
+
 const updateUnitPrice = () => {
-  const totalPrice = values.total_price || 0;
-  let quantity = 0;
+  const totalPrice = parseFloat(values.total_price) || 0;
+  let unitPrice = 0;
 
   if (selectedProduct.value) {
-    const boxes = values.boxes || 0;
-    const fractions = values.fractions || 0;
-    const fractionValue = selectedProduct.value.state_fraction ? selectedProduct.value.fraction : 1;
-    quantity = boxes + fractions / fractionValue;
+    const boxes = parseFloat(values.boxes) || 0;
+    const fractions = parseFloat(values.fractions) || 0;
+    const igvFactor = selectedProduct.value.state_igv ? 1.18 : 1;
+
+    if (selectedType.value === 'Caja') {
+      unitPrice = boxes > 0 ? (totalPrice / boxes) * igvFactor : 0;
+    } else if (selectedType.value === 'Fracción') {
+      unitPrice = fractions > 0 ? (totalPrice / fractions) * igvFactor : 0;
+    } else if (selectedType.value === 'Ambas') {
+      unitPrice = boxes > 0 ? (totalPrice / boxes) * igvFactor : 0;
+    }
   }
 
-  const unitPrice = quantity > 0 ? totalPrice / quantity : totalPrice;
-  setFieldValue('unit_price', parseFloat(unitPrice.toFixed(2)));
+  setFieldValue('unit_price', unitPrice > 0 ? Number(unitPrice.toFixed(2)) : 0);
 };
 
-// Handle form submission
+
 const onAddProduct = handleSubmit((values) => {
   if (!selectedProduct.value) {
     return; 
