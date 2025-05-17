@@ -53,7 +53,6 @@ export type MovementUpdateRequest = {
     issue_date?: string;
     credit_date?: string;
     supplier_id?: number;
-    user_id?: number;
     type_movement_id?: number;
     status?: number;
     statustext?: string;

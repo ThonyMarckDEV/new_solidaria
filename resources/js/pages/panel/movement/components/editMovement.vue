@@ -51,7 +51,6 @@
                         </FormItem>
                     </FormField>
 
-                    
                     <FormField v-slot="{ componentField }" name="type_movement_id">
                         <FormItem>
                         <FormLabel>Tipo de Movimiento</FormLabel>
@@ -72,27 +71,6 @@
                             </Select>
                         </FormControl>
                         <FormMessage />
-                        </FormItem>
-                    </FormField>
-                    <FormField v-slot="{ componentField }" name="status">
-                        <FormItem>
-                            <FormLabel>Estado</FormLabel>
-                            <FormControl>
-                                <Select v-bind="componentField">
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Selecciona el estado" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            <SelectLabel>Estado</SelectLabel>
-                                            <SelectItem value="2">Anulado</SelectItem>
-                                            <SelectItem value="1">Activo</SelectItem>
-                                            <SelectItem value="0">Eliminado</SelectItem>
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
-                            </FormControl>
-                            <FormMessage />
                         </FormItem>
                     </FormField>
                     <FormField v-slot="{ componentField }" name="igv_status">
@@ -176,16 +154,6 @@ const selectedUser = ref<number | null>(null);
 
 const closeModal = () => emit('emit-close', false);
 
-// Función para obtener la etiqueta del estado
-const getStatusLabel = (status: number): string => {
-    switch(status) {
-        case 0: return 'Eliminado';
-        case 1: return 'Activo';
-        case 2: return 'Anulado';
-        default: return 'Desconocido';
-    }
-};
-
 // Schema de validación
 const formSchema = toTypedSchema(
     z.object({
@@ -195,9 +163,9 @@ const formSchema = toTypedSchema(
         supplier_id: z.number({ message: 'Seleccione un proveedor' }),
         user_id: z.number({ message: 'Seleccione un usuario' }),
         type_movement_id: z.string().or(z.number()).transform(val => Number(val)),
-        status: z.string().or(z.number()).transform(val => Number(val)),
         igv_status: z.string().or(z.number()).transform(val => Number(val)),
         payment_type: z.string().min(1, 'El tipo de pago es requerido'),
+        status: z.number(), // Include status in schema
     }),
 );
 
@@ -211,9 +179,9 @@ const { handleSubmit, setValues, setFieldValue } = useForm({
         supplier_id: props.movementData.supplier_id,
         user_id: props.movementData.user_id,
         type_movement_id: props.movementData.type_movement_id,
-        status: String(props.movementData.status),
         igv_status: String(props.movementData.igv_status),
         payment_type: props.movementData.payment_type,
+        status: props.movementData.status, // Include existing status
     },
 });
 
@@ -253,9 +221,9 @@ watch(
                 supplier_id: newData.supplier_id,
                 user_id: newData.user_id,
                 type_movement_id: newData.type_movement_id,
-                status: String(newData.status),
                 igv_status: String(newData.igv_status),
                 payment_type: newData.payment_type,
+                status: newData.status, // Update status
             });
             
             // Actualizar IDs iniciales para los comboboxes

@@ -73,16 +73,14 @@
                             <FormItem>
                                 <FormLabel>Estado</FormLabel>
                                 <FormControl>
-                                    <Select v-bind="componentField">
+                                    <Select v-bind="componentField" disabled>
                                         <SelectTrigger class="w-full">
-                                            <SelectValue placeholder="Seleccione el estado" />
+                                            <SelectValue placeholder="Activo" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectGroup>
                                                 <SelectLabel>Estado</SelectLabel>
-                                                <SelectItem value="2">Anulado</SelectItem>
                                                 <SelectItem value="1">Activo</SelectItem>
-                                                <SelectItem value="0">Eliminado</SelectItem>
                                             </SelectGroup>
                                         </SelectContent>
                                     </Select>
@@ -194,7 +192,7 @@ const formSchema = toTypedSchema(
         supplier_id: z.number({ message: 'Seleccione un proveedor' }),
         user_id: z.number({ message: 'Usuario no autenticado' }),
         type_movement_id: z.string().or(z.number()).transform(val => Number(val)),
-        status: z.string().or(z.number()).transform(val => Number(val)),
+        status: z.number().default(1),
         igv_status: z.string().or(z.number()).transform(val => Number(val)),
         payment_type: z.string({ message: 'Campo obligatorio' }),
     }),
