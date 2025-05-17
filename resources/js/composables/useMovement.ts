@@ -1,4 +1,3 @@
-// useMovement.ts
 import { MovementResource, MovementRequest, MovementUpdateRequest } from '@/pages/panel/movement/interface/Movement';
 import { MovementServices } from '@/services/movementService';
 import { reactive } from 'vue';
@@ -22,6 +21,7 @@ export function useMovement() {
         statusModal: {
             update: false,
             delete: false,
+            addProducts: false, // Add addProducts to statusModal
         },
     });
 
@@ -48,19 +48,18 @@ export function useMovement() {
         }
     };
 
-    // Get movement by ID for editing
+    // Get movement by ID (no modal state changes)
     const getMovementById = async (id: number) => {
         try {
             const response = await MovementServices.show(id);
             principal.movementData = response.movement;
-            principal.statusModal.update = true;
         } catch (error) {
             console.error('Error getting movement:', error);
         }
     };
 
     // Update movement
-    const updateMovement = async (id: number, data: MovementUpdateRequest) => {
+    const updateMovement = async (id: number, battle: MovementUpdateRequest) => {
         try {
             await MovementServices.update(id, data);
             loadingMovements();

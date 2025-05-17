@@ -92,7 +92,7 @@
                                             variant="ghost"
                                             size="sm"
                                             class="action-button"
-                                            @click="openModalAddProducts(movement.id)"
+                                            @click="openModalProductsDetails(movement.id)"
                                             title="Agregar productos"
                                         >
                                             <PackagePlus class="action-icon" />
@@ -146,7 +146,7 @@ const emit = defineEmits<{
     (e: 'page-change', page: number): void;
     (e: 'open-modal', id_movement: number): void;
     (e: 'open-modal-delete', id_movement: number): void;
-    (e: 'open-modal-add-products', id_movement: number): void;
+    (e: 'open-modal-products-details', id_movement: number): void;
 }>();
 
 const page = usePage<SharedData>();
@@ -176,8 +176,8 @@ const openModalDelete = (id: number) => {
     emit('open-modal-delete', id);
 };
 
-const openModalAddProducts = (id: number) => {
-    emit('open-modal-add-products', id);
+const openModalProductsDetails = (id: number) => {
+    emit('open-modal-products-details', id);
 };
 
 const formatDate = (dateString) => {
