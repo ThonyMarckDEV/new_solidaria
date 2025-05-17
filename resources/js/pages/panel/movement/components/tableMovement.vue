@@ -75,7 +75,7 @@
                                         {{ movement.payment_type === 'contado' ? 'Contado' : 'Crédito' }}
                                     </span>
                                 </td>
-                                <!-- Acciones -->
+
                                 <td class="cell-actions text-center">
                                     <div class="actions-container justify-center">
                                         <Button
@@ -87,6 +87,16 @@
                                         >
                                             <UserPen class="action-icon" />
                                             <span class="sr-only">Editar movimiento</span>
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            class="action-button"
+                                            @click="openModalAddProducts(movement.id)"
+                                            title="Agregar productos"
+                                        >
+                                            <PackagePlus class="action-icon" />
+                                            <span class="sr-only">Agregar productos</span>
                                         </Button>
                                         <Button
                                             variant="ghost"
@@ -126,7 +136,7 @@ import { useToast } from '@/components/ui/toast';
 import { Pagination } from '@/interface/paginacion';
 import { SharedData } from '@/types';
 import { usePage } from '@inertiajs/vue3';
-import { Trash, UserPen } from 'lucide-vue-next';
+import { PackagePlus, Trash, UserPen } from 'lucide-vue-next';
 import { onMounted, ref } from 'vue';
 import { MovementResource } from '../interface/Movement';
 
@@ -136,6 +146,7 @@ const emit = defineEmits<{
     (e: 'page-change', page: number): void;
     (e: 'open-modal', id_movement: number): void;
     (e: 'open-modal-delete', id_movement: number): void;
+    (e: 'open-modal-add-products', id_movement: number): void;
 }>();
 
 const page = usePage<SharedData>();
@@ -165,6 +176,10 @@ const openModalDelete = (id: number) => {
     emit('open-modal-delete', id);
 };
 
+const openModalAddProducts = (id: number) => {
+    emit('open-modal-add-products', id);
+};
+
 const formatDate = (dateString) => {
   if (!dateString) return '';
   
@@ -184,6 +199,7 @@ const formatDate = (dateString) => {
     return '';
   }
 };
+
 // Función para determinar la clase del tipo de pago con Tailwind
 const getPaymentTypeClass = (tipoPago) => {
   if (tipoPago === 'contado') {
