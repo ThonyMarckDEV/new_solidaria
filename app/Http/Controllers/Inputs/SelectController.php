@@ -39,7 +39,7 @@ class SelectController extends Controller
             ->get();
         return response()->json($users);
     }
-   // Obtener lista de productos
+   // Obtener lista de productos con detalles
     public function getProducts()
     {
        $products = Product::select([
@@ -50,9 +50,9 @@ class SelectController extends Controller
             'form_farm',
             'barcode',
             'laboratory_id',
-            'laboratory_id as laboratory', 
+            'laboratory_id', 
             'category_id',
-            'category_id as category',
+            'category_id',
             'fraction',
             'state_fraction',
             'state_igv',
