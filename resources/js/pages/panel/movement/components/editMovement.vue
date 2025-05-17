@@ -50,20 +50,7 @@
                             <FormMessage />
                         </FormItem>
                     </FormField>
-                    <FormField v-slot="{ componentField }" name="user_id">
-                        <FormItem>
-                            <FormLabel>Usuario</FormLabel>
-                            <FormControl>
-                                <UserCombobox @select="onSelectUser" :initialId="initialUserId" />
-                            </FormControl>
-                            <!-- Información actual del usuario -->
-                            <div v-if="movementData.user" class="mt-1 text-xs font-medium text-blue-600 dark:text-blue-400 flex items-center">
-                                <span class="inline-block w-3 h-3 mr-1 rounded-full bg-blue-400 dark:bg-blue-600"></span>
-                                Actual: {{ movementData.user.name }}
-                            </div>
-                            <FormMessage />
-                        </FormItem>
-                    </FormField>
+
                     
                     <FormField v-slot="{ componentField }" name="type_movement_id">
                         <FormItem>
