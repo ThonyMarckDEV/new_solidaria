@@ -1,88 +1,139 @@
 <template>
-    <!-- Estado de carga inicial -->
-    <div v-if="isLoading" class="flex items-center space-x-2 py-2">
-      <div class="h-4 w-4 animate-spin rounded-full border-b-2 border-t-2 border-primary"></div>
-      <span class="text-sm text-muted-foreground">Cargando productos...</span>
+  <!-- Loading state -->
+  <div v-if="isLoading" class="flex items-center space-x-2 py-2">
+    <svg class="h-4 w-4 animate-spin text-blue-600" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z" />
+    </svg>
+    <span class="text-sm text-gray-500">Loading products...</span>
+  </div>
+
+  <!-- Error message -->
+  <div v-else-if="error" class="py-2 text-sm text-red-600">Error loading products. Please try again.</div>
+
+  <!-- Combobox -->
+  <div v-else class="relative w-full">
+    <!-- Input and icons -->
+    <div class="relative">
+      <input
+        v-model="searchText"
+        type="text"
+        placeholder="Search products..."
+        class="w-full rounded-md border border-gray-300 bg-white pl-10 pr-10 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        @input="handleSearchInput"
+        @focus="isOpen = true"
+        @keydown.enter="selectFirstProduct"
+        @keydown.arrow-down.prevent="moveHighlight(1)"
+        @keydown.arrow-up.prevent="moveHighlight(-1)"
+        @keydown.escape="closeDropdown"
+      />
+      <!-- Search icon -->
+      <svg
+        class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+      <!-- Loading spinner during search -->
+      <svg
+        v-if="isSearching"
+        class="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-blue-600"
+        viewBox="0 0 24 24"
+      >
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z" />
+      </svg>
+      <!-- Clear selection button -->
+      <button
+        v-if="!isSearching && selectedProduct"
+        class="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+        @click="clearSelection"
+        title="Clear selection"
+      >
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
     </div>
-  
-    <!-- Mensaje de error -->
-    <div v-else-if="error" class="py-2 text-sm text-red-500">Error al cargar productos. Intente nuevamente.</div>
-  
-    <!-- Combobox con altura controlada -->
-    <Combobox v-else by="id" v-model="selectedProduct">
-      <ComboboxAnchor>
-        <div class="relative w-full items-center">
-          <ComboboxInput
-            class="pl-9"
-            :display-value="(val) => val?.name ?? ''"
-            :model-value="searchText"
-            placeholder="Seleccionar producto..."
-            @update:model-value="handleSearchInput"
-          />
-          <span class="absolute inset-y-0 start-0 flex items-center justify-center px-3">
-            <Search class="size-4 text-muted-foreground" />
-          </span>
-          <!-- Indicador de búsqueda -->
-          <span v-if="isSearching" class="absolute inset-y-0 end-0 flex items-center justify-center px-3">
-            <div class="h-4 w-4 animate-spin rounded-full border-b-2 border-t-2 border-primary"></div>
-          </span>
-        </div>
-      </ComboboxAnchor>
-  
-      <!-- Contenedor con scroll -->
-      <ComboboxList class="max-h-60 overflow-y-auto">
-        <ComboboxEmpty>No se encontró ningún producto.</ComboboxEmpty>
-        <ComboboxGroup>
-          <ComboboxItem
-            v-for="product in filteredProducts"
-            :key="product.id"
-            :value="product"
-            @select="onSelect(product)"
-            class="px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            {{ product.name }}
-            <ComboboxItemIndicator>
-              <Check class="ml-auto h-4 w-4" />
-            </ComboboxItemIndicator>
-          </ComboboxItem>
-        </ComboboxGroup>
-      </ComboboxList>
-    </Combobox>
+
+    <!-- Dropdown -->
+    <div
+      v-if="isOpen"
+      class="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg"
+    >
+      <div
+        v-if="filteredProducts.length"
+        v-for="(product, index) in filteredProducts"
+        :key="product.id"
+        class="flex cursor-pointer items-center px-4 py-2 text-sm text-gray-900"
+        :class="{
+          'bg-blue-50': index === highlightedIndex,
+          'bg-blue-100': selectedProduct?.id === product.id,
+        }"
+        @click="selectProduct(product)"
+        @mousemove="highlightedIndex = index"
+      >
+        {{ product.name }}
+        <svg
+          v-if="selectedProduct?.id === product.id"
+          class="ml-auto h-4 w-4 text-blue-600"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+      <div
+        v-else-if="searchText || isSearching"
+        class="px-4 py-2 text-sm text-gray-500"
+      >
+        {{ isSearching ? 'Searching...' : 'No products found.' }}
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import {
-  Combobox,
-  ComboboxAnchor,
-  ComboboxEmpty,
-  ComboboxGroup,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxItemIndicator,
-  ComboboxList,
-} from '@/components/ui/combobox';
-import { Check, Search } from 'lucide-vue-next';
-import { onMounted, ref, computed, defineExpose, watch } from 'vue';
+import { ref, computed, onMounted, defineExpose } from 'vue';
 import debounce from 'debounce';
-import { useProduct } from '@/composables/useProduct'; // Adjust the path as needed
+import { ProductServices } from '@/services/productService';
+import { ProductResource } from '@/pages/panel/product/interface/Product';
 
-const props = defineProps<{
-  initialId: number | null;
-}>();
+// Define interfaces
+export interface ProductResource {
+  id: number;
+  name: string;
+  composition: string;
+  presentation: string;
+  form_farm: string;
+  barcode: string;
+  laboratory_id: number;
+  laboratory: string;
+  category_id: number;
+  category: string;
+  fraction: number;
+  state_fraction: boolean;
+  state_igv: boolean;
+  state: boolean;
+}
 
 const emit = defineEmits<{
-  (e: 'select', id: number, name: string): void;
+  (e: 'select', product_id: number): void;
 }>();
 
 // State
-const { principal, loadingProducts } = useProduct();
-const products = ref<{ id: number; name: string }[]>([]);
+const products = ref<ProductResource[]>([]);
 const searchText = ref<string>('');
 const error = ref<boolean>(false);
 const isLoading = ref<boolean>(true);
 const isSearching = ref<boolean>(false);
-const selectedProduct = ref<{ id: number; name: string } | null>(null);
+const selectedProduct = ref<ProductResource | null>(null);
 const initialLoadDone = ref<boolean>(false);
+const isOpen = ref<boolean>(false);
+const highlightedIndex = ref<number>(-1);
 
 const filteredProducts = computed(() => {
   if (!searchText.value) return products.value;
@@ -92,35 +143,17 @@ const filteredProducts = computed(() => {
   );
 });
 
-// Map ProductResource to { id, name }
-const mapProducts = () => {
-  products.value = principal.productList.map((product) => ({
-    id: product.id,
-    name: product.name,
-  }));
-};
-
-// Initial load and watch for product list updates
 const initialLoadProducts = async () => {
   if (initialLoadDone.value) return;
 
   try {
     isLoading.value = true;
-    await loadingProducts(1, ''); // Load products from useProduct
-    mapProducts();
+    const response: ProductResource[] = await ProductServices.getProducts('');
+    products.value = response || [];
     error.value = false;
     initialLoadDone.value = true;
-
-    // Set initial product if initialId is provided
-    if (props.initialId) {
-      const initialProduct = products.value.find((p) => p.id === props.initialId);
-      if (initialProduct) {
-        selectedProduct.value = initialProduct;
-        emit('select', initialProduct.id, initialProduct.name);
-      }
-    }
   } catch (e) {
-    console.error('Error al cargar productos:', e);
+    console.error('Error loading products:', e);
     error.value = true;
   } finally {
     isLoading.value = false;
@@ -132,20 +165,22 @@ const searchProducts = async (query: string) => {
 
   try {
     isSearching.value = true;
-    await loadingProducts(1, query); // Use filter from useProduct
-    mapProducts();
+    const response: ProductResource[] = await ProductServices.getProducts(query);
+    products.value = response || [];
     error.value = false;
   } catch (e) {
-    console.error('Error al buscar productos:', e);
+    console.error('Error searching products:', e);
+    error.value = true;
   } finally {
     isSearching.value = false;
   }
 };
 
-const handleSearchInput = (value: string) => {
-  searchText.value = value;
+const handleSearchInput = () => {
+  isOpen.value = true;
+  highlightedIndex.value = -1;
   if (initialLoadDone.value) {
-    debouncedSearch(value);
+    debouncedSearch(searchText.value);
   }
 };
 
@@ -155,27 +190,68 @@ const debouncedSearch = debounce((value: string) => {
   }
 }, 400);
 
-const onSelect = (product: { id: number; name: string }) => {
+const selectProduct = (product: ProductResource) => {
   selectedProduct.value = product;
-  emit('select', product.id, product.name);
+  searchText.value = product.name;
+  isOpen.value = false;
+  highlightedIndex.value = -1;
+  emit('select', product.id);
+};
+
+const selectFirstProduct = () => {
+  if (filteredProducts.value.length) {
+    selectProduct(filteredProducts.value[0]);
+  }
+};
+
+const moveHighlight = (direction: number) => {
+  const maxIndex = filteredProducts.value.length - 1;
+  let newIndex = highlightedIndex.value + direction;
+
+  if (newIndex < -1) newIndex = maxIndex;
+  if (newIndex > maxIndex) newIndex = -1;
+
+  highlightedIndex.value = newIndex;
+  isOpen.value = true;
+};
+
+const closeDropdown = () => {
+  isOpen.value = false;
+  highlightedIndex.value = -1;
+  if (selectedProduct.value) {
+    searchText.value = selectedProduct.value.name;
+  } else {
+    searchText.value = '';
+  }
+};
+
+const clearSelection = () => {
+  selectedProduct.value = null;
+  searchText.value = '';
+  isOpen.value = false;
+  highlightedIndex.value = -1;
 };
 
 // Expose reset method to clear selection
 const reset = () => {
-  selectedProduct.value = null;
-  searchText.value = ''; // Optionally clear search text
+  clearSelection();
 };
 
 defineExpose({ reset });
-
-// Watch for changes in principal.productList and update products
-watch(() => principal.productList, (newList) => {
-  mapProducts();
-}, { immediate: true });
 
 onMounted(() => {
   initialLoadProducts();
 });
 </script>
 
-<style scoped></style>
+<style scoped>
+/* Smooth transitions for dropdown */
+.transition-all {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Ensure dropdown scrolls nicely */
+.max-h-60 {
+  max-height: 15rem;
+}
+</style>

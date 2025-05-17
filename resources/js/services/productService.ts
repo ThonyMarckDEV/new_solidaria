@@ -37,8 +37,12 @@ export const ProductServices = {
     async getLaboratory(): Promise<InputLaboratoryResponse> {
         return await axios.get('/panel/inputs/laboratory_list');
     },
-        // get Category
-        async getCategory(): Promise<InputCategoryResponse> {
-            return await axios.get('/panel/inputs/category_list');
-        },
+    // get Category
+    async getCategory(): Promise<InputCategoryResponse> {
+        return await axios.get('/panel/inputs/category_list');
+    },
+    async getProducts(search: string = ''): Promise<ProductResponse> {
+        const response = await axios.get(`/panel/inputs/product_list?${search ? `?search=${encodeURIComponent(search)}` : ''}`);
+        return response.data;
+    },
 };

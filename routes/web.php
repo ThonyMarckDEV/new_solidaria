@@ -100,10 +100,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Route::resource('sales', SaleController::class);
         # Route group for inputs, selects and autocomplete
         Route::prefix('inputs')->name('inputs.')->group(function () {
-
             # get product list
-            Route::get('product_list', [SelectController::class, 'getProductList'])->name('product_list');
-
+            Route::get('product_list', [SelectController::class, 'getProducts'])->name('product_list');
             # get laboratory list
             Route::get('laboratory_list', [SelectController::class, 'getLaboratoryList'])->name('laboratory_list');
             # get category list
