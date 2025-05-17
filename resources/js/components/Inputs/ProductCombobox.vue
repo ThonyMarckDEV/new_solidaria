@@ -62,9 +62,9 @@ import {
   ComboboxList,
 } from '@/components/ui/combobox';
 import { Check, Search } from 'lucide-vue-next';
-import { onMounted, ref, computed, defineExpose } from 'vue';
+import { onMounted, ref, computed, defineExpose, watch } from 'vue';
 import debounce from 'debounce';
-import axios from 'axios';
+import { useProduct } from '@/composables/useProduct'; // Adjust the path as needed
 
 const props = defineProps<{
   initialId: number | null;
@@ -74,7 +74,8 @@ const emit = defineEmits<{
   (e: 'select', id: number, name: string): void;
 }>();
 
-// Estado
+// State
+const { principal, loadingProducts } = useProduct();
 const products = ref<{ id: number; name: string }[]>([]);
 const searchText = ref<string>('');
 const error = ref<boolean>(false);
@@ -91,13 +92,22 @@ const filteredProducts = computed(() => {
   );
 });
 
+// Map ProductResource to { id, name }
+const mapProducts = () => {
+  products.value = principal.productList.map((product) => ({
+    id: product.id,
+    name: product.name,
+  }));
+};
+
+// Initial load and watch for product list updates
 const initialLoadProducts = async () => {
   if (initialLoadDone.value) return;
 
   try {
     isLoading.value = true;
-    const response = await axios.get('/panel/products');
-    products.value = response.data.products || [];
+    await loadingProducts(1, ''); // Load products from useProduct
+    mapProducts();
     error.value = false;
     initialLoadDone.value = true;
 
@@ -122,10 +132,8 @@ const searchProducts = async (query: string) => {
 
   try {
     isSearching.value = true;
-    const response = await axios.get('/panel/products', {
-      params: { search: query },
-    });
-    products.value = response.data.products || [];
+    await loadingProducts(1, query); // Use filter from useProduct
+    mapProducts();
     error.value = false;
   } catch (e) {
     console.error('Error al buscar productos:', e);
@@ -159,6 +167,11 @@ const reset = () => {
 };
 
 defineExpose({ reset });
+
+// Watch for changes in principal.productList and update products
+watch(() => principal.productList, (newList) => {
+  mapProducts();
+}, { immediate: true });
 
 onMounted(() => {
   initialLoadProducts();

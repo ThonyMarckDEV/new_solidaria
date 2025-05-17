@@ -11,12 +11,36 @@
                     <FormItem>
                         <FormLabel>Producto *</FormLabel>
                         <FormControl>
-                            <Input v-bind="componentField" placeholder="Buscar producto" />
+                            <ProductCombobox v-bind="componentField" @select="onProductSelect" :initialId="null" />
                         </FormControl>
                         <div class="flex gap-2 mt-2">
-                            <Button type="button" variant="outline" size="sm">Caja</Button>
-                            <Button type="button" variant="outline" size="sm">Fracción</Button>
-                            <Button type="button" variant="outline" size="sm">Ambas</Button>
+                            <Button 
+                                type="button" 
+                                variant="outline" 
+                                size="sm" 
+                                :class="{ 'bg-gray-200 dark:bg-gray-700': selectedType === 'Caja' }"
+                                @click="selectedType = 'Caja'"
+                            >
+                                Caja
+                            </Button>
+                            <Button 
+                                type="button" 
+                                variant="outline" 
+                                size="sm" 
+                                :class="{ 'bg-gray-200 dark:bg-gray-700': selectedType === 'Fracción' }"
+                                @click="selectedType = 'Fracción'"
+                            >
+                                Fracción
+                            </Button>
+                            <Button 
+                                type="button" 
+                                variant="outline" 
+                                size="sm" 
+                                :class="{ 'bg-gray-200 dark:bg-gray-700': selectedType === 'Ambas' }"
+                                @click="selectedType = 'Ambas'"
+                            >
+                                Ambas
+                            </Button>
                         </div>
                         <FormMessage />
                     </FormItem>
@@ -46,7 +70,7 @@
                     <FormItem>
                         <FormLabel>Precio Total *</FormLabel>
                         <FormControl>
-                            <Input type="number" step="0.01" v-bind="componentField" placeholder="Ingrese el precio" />
+                            <Input type="number" step="0.01" v-bind="componentField" placeholder="Ingrese el precio" @input="updateUnitPrice" />
                         </FormControl>
                         <FormMessage />
                     </FormItem>
@@ -56,7 +80,7 @@
                     <FormItem>
                         <FormLabel>Precio Unitario *</FormLabel>
                         <FormControl>
-                            <Input type="number" step="0.01" v-bind="componentField" value="0.00" readonly />
+                            <Input type="number" step="0.01" v-bind="componentField" readonly />
                         </FormControl>
                         <FormMessage />
                     </FormItem>
@@ -77,9 +101,11 @@ import Button from '@/components/ui/button/Button.vue';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import ProductCombobox from '@/components/Inputs/ProductCombobox.vue'; // Adjust the path as needed
 import { toTypedSchema } from '@vee-validate/zod';
 import { useForm } from 'vee-validate';
 import * as z from 'zod';
+import { ref } from 'vue';
 
 // Props and Emits
 const props = defineProps<{
@@ -90,6 +116,11 @@ const emit = defineEmits<{
     (e: 'emit-close', open: boolean): void;
     (e: 'add-product', product: { product_id: number; quantity: number; name: string; type: string; lot: string; expiry_date: string; unit_price: number }): void;
 }>();
+
+// State for selected product and type
+const selectedProductId = ref<number | null>(null);
+const selectedProductName = ref<string | null>(null);
+const selectedType = ref<string>('Caja'); // Default to 'Caja'
 
 // Form validation schema
 const formSchema = toTypedSchema(
@@ -103,7 +134,7 @@ const formSchema = toTypedSchema(
 );
 
 // Form setup
-const { handleSubmit, setFieldValue, resetForm } = useForm({
+const { handleSubmit, setFieldValue, resetForm, values } = useForm({
     validationSchema: formSchema,
     initialValues: {
         product: '',
@@ -114,19 +145,42 @@ const { handleSubmit, setFieldValue, resetForm } = useForm({
     },
 });
 
-// Mock product selection (replace with actual ProductCombobox logic if available)
+// Handle product selection
+const onProductSelect = (id: number, name: string) => {
+    selectedProductId.value = id;
+    selectedProductName.value = name;
+    setFieldValue('product', name);
+};
+
+// Update unit price based on total price
+const updateUnitPrice = () => {
+    const totalPrice = values.total_price || 0;
+    const quantity = 1; // Assuming quantity is 1 as per the original logic
+    const unitPrice = totalPrice / quantity;
+    setFieldValue('unit_price', unitPrice);
+};
+
+// Handle form submission
 const onAddProduct = handleSubmit((values) => {
+    if (!selectedProductId.value || !selectedProductName.value) {
+        return; // Prevent submission if no product is selected
+    }
+
     const product = {
-        product_id: 1, // Mock ID, replace with actual product ID from ProductCombobox
-        quantity: 1, // Default quantity, adjust as needed
-        name: values.product,
-        type: 'Caja', // Default type, adjust based on button selection
+        product_id: selectedProductId.value,
+        quantity: 1, // Default quantity, adjust if needed
+        name: selectedProductName.value,
+        type: selectedType.value,
         lot: values.lot,
         expiry_date: values.expiry_date,
-        unit_price: values.total_price, // Assuming total_price is per unit for simplicity
+        unit_price: values.unit_price,
     };
+
     emit('add-product', product);
     resetForm();
+    selectedProductId.value = null;
+    selectedProductName.value = null;
+    selectedType.value = 'Caja'; // Reset type
     emit('emit-close', false);
 });
 </script>
