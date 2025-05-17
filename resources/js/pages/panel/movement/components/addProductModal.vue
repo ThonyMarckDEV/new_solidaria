@@ -1,99 +1,151 @@
 <template>
-    <Dialog :open="modal" @update:open="emit('emit-close', false)">
-        <DialogContent class="sm:max-w-[425px]">
-            <DialogHeader>
-                <DialogTitle>Nuevo Movimiento</DialogTitle>
-            </DialogHeader>
+  <Dialog :open="modal" @update:open="emit('emit-close', false)">
+    <DialogContent class="sm:max-w-[425px]">
+      <DialogHeader>
+        <DialogTitle>Nuevo Movimiento</DialogTitle>
+      </DialogHeader>
 
-            <!-- Form to Add Product -->
-            <form @submit.prevent="onAddProduct" class="space-y-4">
-                <FormField v-slot="{ componentField }" name="product">
-                    <FormItem>
-                        <FormLabel>Producto *</FormLabel>
-                        <FormControl>
-                            <ProductCombobox v-bind="componentField" @select="onProductSelect" :initialId="null" />
-                        </FormControl>
-                        <div class="flex gap-2 mt-2">
-                            <Button 
-                                type="button" 
-                                variant="outline" 
-                                size="sm" 
-                                :class="{ 'bg-gray-200 dark:bg-gray-700': selectedType === 'Caja' }"
-                                @click="selectedType = 'Caja'"
-                            >
-                                Caja
-                            </Button>
-                            <Button 
-                                type="button" 
-                                variant="outline" 
-                                size="sm" 
-                                :class="{ 'bg-gray-200 dark:bg-gray-700': selectedType === 'Fracción' }"
-                                @click="selectedType = 'Fracción'"
-                            >
-                                Fracción
-                            </Button>
-                            <Button 
-                                type="button" 
-                                variant="outline" 
-                                size="sm" 
-                                :class="{ 'bg-gray-200 dark:bg-gray-700': selectedType === 'Ambas' }"
-                                @click="selectedType = 'Ambas'"
-                            >
-                                Ambas
-                            </Button>
-                        </div>
-                        <FormMessage />
-                    </FormItem>
-                </FormField>
+      <!-- Form to Add Product -->
+      <form @submit.prevent="onAddProduct" class="space-y-4">
+        <FormField v-slot="{ componentField }" name="product">
+          <FormItem>
+            <FormLabel>Producto *</FormLabel>
+            <FormControl>
+              <ProductCombobox v-bind="componentField" @select="onProductSelect" :initialId="null" />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
 
-                <FormField v-slot="{ componentField }" name="lot">
-                    <FormItem>
-                        <FormLabel>Lote *</FormLabel>
-                        <FormControl>
-                            <Input v-bind="componentField" placeholder="" />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                </FormField>
+        <!-- Type selection buttons (shown only if product is selected) -->
+        <div v-if="selectedProduct" class="flex gap-2 mt-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            :class="{ 'bg-gray-200 dark:bg-gray-700': selectedType === 'Caja' }"
+            @click="selectedType = 'Caja'"
+          >
+            Caja
+          </Button>
+          <Button
+            v-if="selectedProduct?.state_fraction"
+            type="button"
+            variant="outline"
+            size="sm"
+            :class="{ 'bg-gray-200 dark:bg-gray-700': selectedType === 'Fracción' }"
+            @click="selectedType = 'Fracción'"
+          >
+            Fracción
+          </Button>
+          <Button
+            v-if="selectedProduct?.state_fraction"
+            type="button"
+            variant="outline"
+            size="sm"
+            :class="{ 'bg-gray-200 dark:bg-gray-700': selectedType === 'Ambas' }"
+            @click="selectedType = 'Ambas'"
+          >
+            Ambas
+          </Button>
+        </div>
 
-                <FormField v-slot="{ componentField }" name="expiry_date">
-                    <FormItem>
-                        <FormLabel>Fecha de Vencimiento *</FormLabel>
-                        <FormControl>
-                            <Input type="date" v-bind="componentField" />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                </FormField>
+        <!-- Quantity inputs based on selectedType and state_fraction -->
+        <div v-if="selectedProduct" class="space-y-4">
+          <!-- Caja input -->
+          <FormField v-if="selectedType === 'Caja' || selectedType === 'Ambas'" v-slot="{ componentField }" name="boxes">
+            <FormItem>
+              <FormLabel>Cajas</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  v-bind="componentField"
+                  min="0"
+                  @input="handleBoxesInput"
+                  placeholder="Ingrese cantidad de cajas"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
 
-                <FormField v-slot="{ componentField }" name="total_price">
-                    <FormItem>
-                        <FormLabel>Precio Total *</FormLabel>
-                        <FormControl>
-                            <Input type="number" step="0.01" v-bind="componentField" placeholder="Ingrese el precio" @input="updateUnitPrice" />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                </FormField>
+          <!-- Fracción input -->
+          <FormField
+            v-if="selectedProduct?.state_fraction && (selectedType === 'Fracción' || selectedType === 'Ambas')"
+            v-slot="{ componentField }"
+            name="fractions"
+          >
+            <FormItem>
+              <FormLabel>Fracciones (Máximo {{ selectedProduct?.fraction }})</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  v-bind="componentField"
+                  :max="selectedProduct?.fraction"
+                  min="0"
+                  @input="handleFractionsInput"
+                  placeholder="Ingrese cantidad de fracciones"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
+        </div>
 
-                <FormField v-slot="{ componentField }" name="unit_price">
-                    <FormItem>
-                        <FormLabel>Precio Unitario *</FormLabel>
-                        <FormControl>
-                            <Input type="number" step="0.01" v-bind="componentField" readonly />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                </FormField>
+        <FormField v-slot="{ componentField }" name="lot">
+          <FormItem>
+            <FormLabel>Lote *</FormLabel>
+            <FormControl>
+              <Input v-bind="componentField" placeholder="" />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
 
-                <!-- Footer Actions -->
-                <div class="flex justify-end gap-3">
-                    <Button type="button" variant="outline" @click="emit('emit-close', false)">Cancelar</Button>
-                    <Button type="submit">Guardar</Button>
-                </div>
-            </form>
-        </DialogContent>
-    </Dialog>
+        <FormField v-slot="{ componentField }" name="expiry_date">
+          <FormItem>
+            <FormLabel>Fecha de Vencimiento *</FormLabel>
+            <FormControl>
+              <Input type="date" v-bind="componentField" />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
+
+        <FormField v-slot="{ componentField }" name="total_price">
+          <FormItem>
+            <FormLabel>Precio Total *</FormLabel>
+            <FormControl>
+              <Input
+                type="number"
+                step="0.01"
+                v-bind="componentField"
+                placeholder="Ingrese el precio"
+                @input="updateUnitPrice"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
+
+        <FormField v-slot="{ componentField }" name="unit_price">
+          <FormItem>
+            <FormLabel>Precio Unitario *</FormLabel>
+            <FormControl>
+              <Input type="number" step="0.01" v-bind="componentField" readonly />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
+
+        <!-- Footer Actions -->
+        <div class="flex justify-end gap-3">
+          <Button type="button" variant="outline" @click="emit('emit-close', false)">Cancelar</Button>
+          <Button type="submit">Guardar</Button>
+        </div>
+      </form>
+    </DialogContent>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
@@ -101,86 +153,146 @@ import Button from '@/components/ui/button/Button.vue';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import ProductCombobox from '@/components/Inputs/ProductCombobox.vue'; // Adjust the path as needed
+import ProductCombobox from '@/components/Inputs/ProductCombobox.vue';
 import { toTypedSchema } from '@vee-validate/zod';
 import { useForm } from 'vee-validate';
 import * as z from 'zod';
 import { ref } from 'vue';
+import { ProductResource } from '@/pages/panel/product/interface/Product';
 
 // Props and Emits
 const props = defineProps<{
-    modal: boolean;
+  modal: boolean;
 }>();
 
 const emit = defineEmits<{
-    (e: 'emit-close', open: boolean): void;
-    (e: 'add-product', product: { product_id: number; quantity: number; name: string; type: string; lot: string; expiry_date: string; unit_price: number }): void;
+  (e: 'emit-close', open: boolean): void;
+  (e: 'add-product', product: {
+    product_id: number;
+    boxes: number;
+    fractions: number;
+    name: string;
+    type: string;
+    lot: string;
+    expiry_date: string;
+    unit_price: number;
+  }): void;
 }>();
 
-// State for selected product and type
-const selectedProductId = ref<number | null>(null);
-const selectedProductName = ref<string | null>(null);
-const selectedType = ref<string>('Caja'); // Default to 'Caja'
+// State
+const selectedProduct = ref<ProductResource | null>(null);
+const selectedType = ref<string>('Caja');
 
 // Form validation schema
 const formSchema = toTypedSchema(
-    z.object({
-        product: z.string().min(1, 'Seleccione un producto'),
-        lot: z.string().min(1, 'El lote es requerido'),
-        expiry_date: z.string().min(1, 'La fecha de vencimiento es requerida'),
-        total_price: z.number({ message: 'El precio total debe ser un número' }).min(0, 'El precio total debe ser mayor o igual a 0'),
-        unit_price: z.number({ message: 'El precio unitario debe ser un número' }).min(0, 'El precio unitario debe ser mayor o igual a 0'),
-    })
+  z.object({
+    product: z.string().min(1, 'Seleccione un producto'),
+    boxes: z.number({ message: 'La cantidad de cajas debe ser un número' }).min(0, 'La cantidad de cajas debe ser mayor o igual a 0').optional(),
+    fractions: z
+      .number({ message: 'La cantidad de fracciones debe ser un número' })
+      .min(0, 'La cantidad de fracciones debe ser mayor o igual a 0')
+      .optional(),
+    lot: z.string().min(1, 'El lote es requerido'),
+    expiry_date: z.string().min(1, 'La fecha de vencimiento es requerida'),
+    total_price: z.number({ message: 'El precio total debe ser un número' }).min(0, 'El precio total debe ser mayor o igual a 0'),
+    unit_price: z.number({ message: 'El precio unitario debe ser un número' }).min(0, 'El precio unitario debe ser mayor o igual a 0'),
+  })
 );
 
 // Form setup
 const { handleSubmit, setFieldValue, resetForm, values } = useForm({
-    validationSchema: formSchema,
-    initialValues: {
-        product: '',
-        lot: '',
-        expiry_date: '',
-        total_price: 0,
-        unit_price: 0,
-    },
+  validationSchema: formSchema,
+  initialValues: {
+    product: '',
+    boxes: 0,
+    fractions: 0,
+    lot: '',
+    expiry_date: '',
+    total_price: 0,
+    unit_price: 0,
+  },
 });
 
 // Handle product selection
-const onProductSelect = (id: number, name: string) => {
-    selectedProductId.value = id;
-    selectedProductName.value = name;
-    setFieldValue('product', name);
+const onProductSelect = (product: ProductResource | null) => {
+  selectedProduct.value = product;
+  selectedType.value = 'Caja';
+  if (product) {
+    setFieldValue('product', product.name);
+    setFieldValue('boxes', 0);
+    setFieldValue('fractions', 0);
+  } else {
+    setFieldValue('product', '');
+    setFieldValue('boxes', 0);
+    setFieldValue('fractions', 0);
+  }
 };
 
-// Update unit price based on total price
+// Handle boxes input
+const handleBoxesInput = () => {
+  const boxes = values.boxes || 0;
+  setFieldValue('boxes', Math.max(0, boxes));
+  updateUnitPrice();
+};
+
+// Handle fractions input with validation and conversion
+const handleFractionsInput = () => {
+  if (!selectedProduct.value) return;
+
+  let fractions = values.fractions || 0;
+  const maxFractions = selectedProduct.value.fraction;
+
+  if (selectedType.value === 'Ambas' && fractions > maxFractions) {
+    const extraBoxes = Math.floor(fractions / maxFractions);
+    fractions = fractions % maxFractions;
+    setFieldValue('boxes', (values.boxes || 0) + extraBoxes);
+    setFieldValue('fractions', fractions);
+  } else if (fractions > maxFractions) {
+    setFieldValue('fractions', maxFractions);
+  } else if (fractions < 0) {
+    setFieldValue('fractions', 0); 
+  }
+
+  updateUnitPrice();
+};
+
+// Update unit price based on total price and quantity
 const updateUnitPrice = () => {
-    const totalPrice = values.total_price || 0;
-    const quantity = 1; // Assuming quantity is 1 as per the original logic
-    const unitPrice = totalPrice / quantity;
-    setFieldValue('unit_price', unitPrice);
+  const totalPrice = values.total_price || 0;
+  let quantity = 0;
+
+  if (selectedProduct.value) {
+    const boxes = values.boxes || 0;
+    const fractions = values.fractions || 0;
+    const fractionValue = selectedProduct.value.state_fraction ? selectedProduct.value.fraction : 1;
+    quantity = boxes + fractions / fractionValue;
+  }
+
+  const unitPrice = quantity > 0 ? totalPrice / quantity : totalPrice;
+  setFieldValue('unit_price', parseFloat(unitPrice.toFixed(2)));
 };
 
 // Handle form submission
 const onAddProduct = handleSubmit((values) => {
-    if (!selectedProductId.value || !selectedProductName.value) {
-        return; // Prevent submission if no product is selected
-    }
+  if (!selectedProduct.value) {
+    return; 
+  }
 
-    const product = {
-        product_id: selectedProductId.value,
-        quantity: 1, // Default quantity, adjust if needed
-        name: selectedProductName.value,
-        type: selectedType.value,
-        lot: values.lot,
-        expiry_date: values.expiry_date,
-        unit_price: values.unit_price,
-    };
+  const product = {
+    product_id: selectedProduct.value.id,
+    boxes: values.boxes || 0,
+    fractions: selectedProduct.value.state_fraction && (selectedType.value === 'Fracción' || selectedType.value === 'Ambas') ? (values.fractions || 0) : 0,
+    name: selectedProduct.value.name,
+    type: selectedType.value,
+    lot: values.lot,
+    expiry_date: values.expiry_date,
+    unit_price: values.unit_price,
+  };
 
-    emit('add-product', product);
-    resetForm();
-    selectedProductId.value = null;
-    selectedProductName.value = null;
-    selectedType.value = 'Caja'; // Reset type
-    emit('emit-close', false);
+  emit('add-product', product);
+  resetForm();
+  selectedProduct.value = null;
+  selectedType.value = 'Caja';
+  emit('emit-close', false);
 });
 </script>

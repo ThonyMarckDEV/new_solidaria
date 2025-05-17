@@ -102,26 +102,8 @@ import debounce from 'debounce';
 import { ProductServices } from '@/services/productService';
 import { ProductResource } from '@/pages/panel/product/interface/Product';
 
-// Define interfaces
-export interface ProductResource {
-  id: number;
-  name: string;
-  composition: string;
-  presentation: string;
-  form_farm: string;
-  barcode: string;
-  laboratory_id: number;
-  laboratory: string;
-  category_id: number;
-  category: string;
-  fraction: number;
-  state_fraction: boolean;
-  state_igv: boolean;
-  state: boolean;
-}
-
 const emit = defineEmits<{
-  (e: 'select', product_id: number): void;
+  (e: 'select', product: ProductResource): void;
 }>();
 
 // State
@@ -195,7 +177,7 @@ const selectProduct = (product: ProductResource) => {
   searchText.value = product.name;
   isOpen.value = false;
   highlightedIndex.value = -1;
-  emit('select', product.id);
+  emit('select', product);
 };
 
 const selectFirstProduct = () => {
@@ -230,6 +212,7 @@ const clearSelection = () => {
   searchText.value = '';
   isOpen.value = false;
   highlightedIndex.value = -1;
+  emit('select', null as any); // Emit null to clear selection
 };
 
 // Expose reset method to clear selection
