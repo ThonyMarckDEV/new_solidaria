@@ -19,17 +19,19 @@ class MovementResource extends JsonResource
         $totalIgv = 0;
         $totalTotal = 0;
 
-        // Check if detalles is not null and is iterable
-        if ($this->detalles && is_iterable($this->detalles)) {
-            foreach ($this->detalles as $detalle) {
-                $precioConjunto = $detalle->precioConjunto ?? 0;
+        // Check if product_movements relationship exists and is iterable
+        if ($this->product_movements && is_iterable($this->product_movements)) {
+            foreach ($this->product_movements as $movement) {
+                $totalPrice = $movement->total_price ?? 0;
 
-                if ($this->estadoIgv == 1) {
-                    $total = $precioConjunto;
-                    $subtotal = $total / (1 + $tasaIgv);
-                    $igv = $total - $subtotal;
+                if ($this->igv_status == 1) {
+                    // IGV included in total_price
+                    $subtotal = $totalPrice / (1 + $tasaIgv);
+                    $igv = $totalPrice - $subtotal;
+                    $total = $totalPrice;
                 } else {
-                    $subtotal = $precioConjunto;
+                    // IGV not included
+                    $subtotal = $totalPrice;
                     $igv = $subtotal * $tasaIgv;
                     $total = $subtotal + $igv;
                 }

@@ -23,41 +23,6 @@ class MovementController extends Controller
         return Inertia::render('panel/movement/indexMovement');
     }
 
-    // /**
-    //  * List movements with optional filtering
-    //  */
-    // public function listMovements(Request $request)
-    // {
-    //     Gate::authorize('viewAny', Movement::class);
-    //     try {
-
-    //         $codigo = $request->get('codigo');
-    //         $movements = Movement::with(['supplier', 'user', 'typemovement'])  // Cargar las relaciones
-    //             ->when($codigo, function ($query, $codigo) {
-    //                 return $query->where('codigo', 'like', "%$codigo%");
-    //             })
-    //             ->orderBy('id', 'asc')
-    //             ->paginate(15);
-
-    //         return response()->json([
-    //             'movements' => MovementResource::collection($movements),
-    //             'pagination' => [
-    //                 'total' => $movements->total(),
-    //                 'current_page' => $movements->currentPage(),
-    //                 'per_page' => $movements->perPage(),
-    //                 'last_page' => $movements->lastPage(),
-    //                 'from' => $movements->firstItem(),
-    //                 'to' => $movements->lastItem()
-    //             ]
-    //         ]);
-    //     } catch (\Throwable $th) {
-    //         return response()->json([
-    //             'message' => 'Error al listar los movimientos',
-    //             'error' => $th->getMessage()
-    //         ], 500);
-    //     }
-    // }
-
      /**
      * List movements with optional filtering
      */
@@ -66,9 +31,9 @@ class MovementController extends Controller
         Gate::authorize('viewAny', Movement::class);
         try {
             $codigo = $request->get('codigo');
-            $movements = Movement::with(['supplier', 'user', 'typemovement', 'details'])
+            $movements = Movement::with(['supplier', 'user', 'typemovement', 'product_movements'])
                 ->when($codigo, function ($query, $codigo) {
-                    return $query->where('codigo', 'like', "%$codigo%");
+                    return $query->where('code', 'like', "%$codigo%");
                 })
                 ->orderBy('id', 'asc')
                 ->paginate(15);

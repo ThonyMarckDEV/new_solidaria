@@ -49,7 +49,8 @@ class Movement extends Model
         return $this->belongsTo(TypeMovement::class, 'type_movement_id');
     }
 
-    public function details(){
+    public function product_movements()
+    {
         return $this->hasMany(ProductMovement::class, 'movement_id');
     }
 }
