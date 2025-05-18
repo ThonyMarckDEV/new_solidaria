@@ -69,14 +69,14 @@ class MovementController extends Controller
     // /**
     //  * Store a newly created resource in storage.
     //  */
-    // public function store(StoreMovementRequest $request)
-    // {
-    //     Gate::authorize('create', Movement::class);
-    //     $validated = $request->validated();
-    //     $movement = Movement::create($validated);
+    public function store(StoreMovementRequest $request)
+    {
+        Gate::authorize('create', Movement::class);
+        $validated = $request->validated();
+        $movement = Movement::create($validated);
 
-    //     return redirect()->route('panel.movements.index')->with('message', 'Movimiento creado correctamente');
-    // }
+        return redirect()->route('panel.movements.index')->with('message', 'Movimiento creado correctamente');
+    }
 
     /**
      * Display the specified resource.
