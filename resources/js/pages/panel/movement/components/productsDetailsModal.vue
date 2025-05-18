@@ -206,6 +206,17 @@
                 @emit-close="closeAddProductModal"
                 @add-product="addProductFromModal"
             />
+
+           <ConfirmDeleteModal
+                :modal="confirmDeleteModalOpen"
+                :itemId="selectedProductId"
+                title="Confirmar Eliminación"
+                description="¿Está seguro de que desea eliminar este producto del movimiento?"
+                confirmButtonText="Eliminar"
+                cancelButtonText="Cancelar"
+                @closeModal="closeConfirmDeleteModal"
+                @deleteItem="confirmDeleteProduct"
+            />
         </DialogContent>
     </Dialog>
 </template>
@@ -220,6 +231,11 @@ import { MovementResource } from '../interface/Movement';
 import AddProductModal from './addProductModal.vue';
 import { Plus, Trash } from 'lucide-vue-next';
 import { ProductMovementServices, ProductMovement, ProductMovementResponse } from '@/services/productMovementService';
+import ConfirmDeleteModal from '@/components/delete.vue';
+
+
+const confirmDeleteModalOpen = ref(false);
+const selectedProductId = ref<number | null>(null);
 
 // Props and Emits
 const props = defineProps<{
@@ -421,19 +437,32 @@ const addProductFromModal = async (product: ProductMovement) => {
 };
 
 // Remove product from the list
-const removeProduct = async (productId: number) => {
-    try {
-        await ProductMovementServices.deleteProductMovement(productId, props.movementData.id);
-        productMovements.value.data = productMovements.value.data.filter(p => p.productId !== productId);
-        updateTotals();
-        if (paginatedProducts.value.length === 0 && currentPage.value > 1) {
-            currentPage.value--;
+const removeProduct = (productId: number) => {
+    selectedProductId.value = productId;
+    confirmDeleteModalOpen.value = true;
+};
+
+const confirmDeleteProduct = async () => {
+    if (selectedProductId.value !== null) {
+        try {
+            await ProductMovementServices.deleteProductMovement(selectedProductId.value, props.movementData.id);
+            productMovements.value.data = productMovements.value.data.filter(p => p.productId !== selectedProductId.value);
+            updateTotals();
+            if (paginatedProducts.value.length === 0 && currentPage.value > 1) {
+                currentPage.value--;
+            }
+            emit('refresh-movements');
+        } catch (error: any) {
+            console.error('Error deleting product movement:', error);
+            errorMessage.value = error.response?.data?.message || 'Failed to delete product. Please try again.';
         }
-        emit('refresh-movements');
-    } catch (error: any) {
-        console.error('Error deleting product movement:', error);
-        errorMessage.value = error.response?.data?.message || 'Failed to delete product. Please try again.';
+        closeConfirmDeleteModal();
     }
+};
+
+const closeConfirmDeleteModal = () => {
+    confirmDeleteModalOpen.value = false;
+    selectedProductId.value = null;
 };
 
 const updateTotals = () => {
