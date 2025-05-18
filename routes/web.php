@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Panel\CategoryController;
+use App\Http\Controllers\Panel\ProductMovementController;
 use App\Http\Controllers\Panel\ZoneController;
 use App\Http\Controllers\Panel\DoctorController;
 use App\Http\Controllers\Panel\SupplierController;
@@ -96,6 +97,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('inventory', InventoryController::class);
         # list Inventory
         Route::get('listar-inventory', [InventoryController::class, 'listInventory'])->name('inventory.listar');
+        # Adedd products to movement 
+        Route::post('/product-movements', [ProductMovementController::class, 'store'])->name('product-movements.store');
         # module sale
         // Route::resource('sales', SaleController::class);
         # Route group for inputs, selects and autocomplete

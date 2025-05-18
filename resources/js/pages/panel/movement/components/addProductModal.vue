@@ -158,6 +158,7 @@ import { toTypedSchema } from '@vee-validate/zod';
 import { useForm } from 'vee-validate';
 import * as z from 'zod';
 import { ref } from 'vue';
+import { ProductServices } from '@/services/productService';
 
 export interface ProductResource {
   id: number;
@@ -295,9 +296,32 @@ const updateUnitPrice = () => {
 };
 
 
-const onAddProduct = handleSubmit((values) => {
+// const onAddProduct = handleSubmit((values) => {
+//   if (!selectedProduct.value) {
+//     return; 
+//   }
+
+//   const product = {
+//     product_id: selectedProduct.value.id,
+//     boxes: values.boxes || 0,
+//     fractions: selectedProduct.value.state_fraction && (selectedType.value === 'Fracción' || selectedType.value === 'Ambas') ? (values.fractions || 0) : 0,
+//     name: selectedProduct.value.name,
+//     type: selectedType.value,
+//     lot: values.lot,
+//     expiry_date: values.expiry_date,
+//     unit_price: values.unit_price,
+//   };
+
+//   emit('add-product', product);
+//   resetForm();
+//   selectedProduct.value = null;
+//   selectedType.value = 'Caja';
+//   emit('emit-close', false);
+// });
+
+const onAddProduct = handleSubmit(async (values) => {
   if (!selectedProduct.value) {
-    return; 
+    return;
   }
 
   const product = {
@@ -309,12 +333,32 @@ const onAddProduct = handleSubmit((values) => {
     lot: values.lot,
     expiry_date: values.expiry_date,
     unit_price: values.unit_price,
+    total_price: values.total_price,
   };
 
-  emit('add-product', product);
-  resetForm();
-  selectedProduct.value = null;
-  selectedType.value = 'Caja';
-  emit('emit-close', false);
+  try {
+    const response = await ProductServices.storeProductMovement({
+      product_id: product.product_id,
+      boxes: product.boxes,
+      fractions: product.fractions,
+      type: product.type,
+      lot: product.lot,
+      expiry_date: product.expiry_date,
+      unit_price: product.unit_price,
+      total_price: product.total_price,
+    });
+
+    if (response.success) {
+      emit('add-product', product); // Emit to parent component
+      resetForm();
+      selectedProduct.value = null;
+      selectedType.value = 'Caja';
+      emit('emit-close', false);
+    } else {
+      console.error('Failed to add product movement:', response.message);
+    }
+  } catch (error) {
+    console.error('Error adding product movement:', error);
+  }
 });
 </script>
