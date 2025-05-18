@@ -86,18 +86,20 @@ export const ProductMovementServices = {
     },
 
     // Delete a product movement
-    async deleteProductMovement(productId: number, movementId: number): Promise<ProductMovementDeleteResponse> {
+    async deleteProductMovement(id: number): Promise<ProductMovementDeleteResponse> {
+        if (!id) {
+            throw new Error('El ID del movimiento de producto es requerido');
+        }
         try {
-            const response = await axios.delete('/panel/product-movements', {
+            const response = await axios.delete<ProductMovementDeleteResponse>('/panel/product-movements/delete', {
                 data: {
-                    product_id: productId,
-                    movement_id: movementId,
+                    id: id,
                 },
             });
             return response.data;
         } catch (error: any) {
-            console.error('Error deleting product movement:', error);
-            throw error;
+            console.error('Error al eliminar el movimiento de producto:', error.response?.data || error.message);
+            throw new Error(error.response?.data?.message || 'Error al eliminar el movimiento de producto');
         }
     }
 };

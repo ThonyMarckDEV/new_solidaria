@@ -110,7 +110,7 @@
                             <TableRow class="bg-emerald-100 dark:bg-blue-800">
                                 <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Tipo</TableHead>
                                 <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Cantidad</TableHead>
-                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">producto</TableHead>
+                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Producto</TableHead>
                                 <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Laboratorio</TableHead>
                                 <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Lote</TableHead>
                                 <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Fecha Expiracion</TableHead>
@@ -130,12 +130,12 @@
                                 class="hover:bg-emerald-50 dark:hover:bg-blue-950 transition-colors duration-200"
                             >
                                 <td class="text-center text-gray-800 dark:text-gray-200 py-3">
-                                {{ 
-                                    product.quantityType === 'Box' ? 'Caja' : 
-                                    product.quantityType === 'Both' ? 'Ambos' : 
-                                    product.quantityType === 'Fraction' ? 'Fracción' : 
-                                    product.quantityType 
-                                }}
+                                    {{ 
+                                        product.quantityType === 'Box' ? 'Caja' : 
+                                        product.quantityType === 'Both' ? 'Ambos' : 
+                                        product.quantityType === 'Fraction' ? 'Fracción' : 
+                                        product.quantityType 
+                                    }}
                                 </td>
                                 <td class="text-center text-gray-800 dark:text-gray-200 py-3">{{ product.totalQuantity }}</td>
                                 <td class="text-center text-gray-800 dark:text-gray-200 py-3">{{ product.productName }}</td>
@@ -207,7 +207,7 @@
                 @add-product="addProductFromModal"
             />
 
-           <ConfirmDeleteModal
+            <ConfirmDeleteModal
                 :modal="confirmDeleteModalOpen"
                 :itemId="selectedProductId"
                 title="Confirmar Eliminación"
@@ -232,7 +232,6 @@ import AddProductModal from './addProductModal.vue';
 import { Plus, Trash } from 'lucide-vue-next';
 import { ProductMovementServices, ProductMovement, ProductMovementResponse } from '@/services/productMovementService';
 import ConfirmDeleteModal from '@/components/delete.vue';
-
 
 const confirmDeleteModalOpen = ref(false);
 const selectedProductId = ref<number | null>(null);
@@ -437,16 +436,17 @@ const addProductFromModal = async (product: ProductMovement) => {
 };
 
 // Remove product from the list
-const removeProduct = (productId: number) => {
-    selectedProductId.value = productId;
+const removeProduct = (id: number) => {
+    console.log('Removing product movement with id:', id); // Debug
+    selectedProductId.value = id;
     confirmDeleteModalOpen.value = true;
 };
 
 const confirmDeleteProduct = async () => {
     if (selectedProductId.value !== null) {
         try {
-            await ProductMovementServices.deleteProductMovement(selectedProductId.value, props.movementData.id);
-            productMovements.value.data = productMovements.value.data.filter(p => p.productId !== selectedProductId.value);
+            await ProductMovementServices.deleteProductMovement(selectedProductId.value);
+            productMovements.value.data = productMovements.value.data.filter(p => p.id !== selectedProductId.value);
             updateTotals();
             if (paginatedProducts.value.length === 0 && currentPage.value > 1) {
                 currentPage.value--;

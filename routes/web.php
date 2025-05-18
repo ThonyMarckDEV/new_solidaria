@@ -99,6 +99,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('listar-inventory', [InventoryController::class, 'listInventory'])->name('inventory.listar');
         # module DetailsProductMovements 
         Route::resource('product-movements', ProductMovementController::class);
+        Route::delete('product-movements/delete', [ProductMovementController::class, 'destroy']);
         # list ProductMovements
         Route::get('listar-product-movements', [ProductMovementController::class, 'listProductMovements']);
         # module sale
