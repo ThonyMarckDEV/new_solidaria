@@ -9,7 +9,7 @@
       <form @submit.prevent="onAddProduct" class="space-y-4">
         <FormField v-slot="{ componentField }" name="product">
           <FormItem>
-            <FormLabel>Product *</FormLabel>
+            <FormLabel>Producto *</FormLabel>
             <FormControl>
               <ProductCombobox v-bind="componentField" @select="onProductSelect" :initialId="null" />
             </FormControl>
@@ -274,15 +274,15 @@ const onAddProduct = handleSubmit(async (values) => {
   if (!selectedProduct.value) return;
 
   const requestData = {
-    product_id: selectedProduct.value.id,
-    boxes: values.boxes || 0,
-    fractions: selectedProduct.value.state_fraction && (selectedType.value === 'Fraction' || selectedType.value === 'Both') ? (values.fractions || 0) : 0,
-    type: selectedType.value,
-    batch: values.batch,
-    expiry_date: values.expiry_date,
-    unit_price: values.unit_price,
-    total_price: values.total_price,
-    movement_id: props.movementId,
+      product_id: selectedProduct.value.id,
+      boxes: values.boxes || 0,
+      fractions: selectedProduct.value.state_fraction && (selectedType.value === 'Fraction' || selectedType.value === 'Both') ? (values.fractions || 0) : 0,
+      type: selectedType.value,
+      batch: values.batch,
+      expiry_date: values.expiry_date,
+      unit_price: values.unit_price,
+      total_price: values.total_price,
+      movement_id: props.movementId,
   };
 
   try {

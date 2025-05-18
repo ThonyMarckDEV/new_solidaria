@@ -91,7 +91,7 @@ class ProductMovementController extends Controller
         }
     }
 
-    public function store(Request $request)
+   public function store(Request $request)
     {
         try {
             $validated = $request->validate([
@@ -108,12 +108,14 @@ class ProductMovementController extends Controller
 
             $result = $this->pipeline->handle($validated, $validated['movement_id']);
 
-            // Assuming pipeline returns the created product movement
+            // Access the ProductMovement model from $result['data']
+            $movement = $result['data'];
+
             return response()->json([
                 'success' => true,
                 'message' => 'Product movement created successfully',
                 'data' => [
-                    'id' => $result['id'],
+                    'id' => $movement->id, // Use ->id since $movement is a model
                     'product_id' => $validated['product_id'],
                     'quantity' => $validated['quantity'],
                     'fraction_quantity' => $validated['fraction_quantity'],

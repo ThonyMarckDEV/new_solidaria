@@ -56,7 +56,7 @@ export interface ProductMovementDeleteResponse {
 
 export const ProductMovementServices = {
     // Add product movement
-    async storeProductMovement(data: ProductMovementRequest): Promise<ProductMovementResponse> {
+   async storeProductMovement(data: ProductMovementRequest): Promise<ProductMovementResponse> {
         const response = await axios.post('/panel/product-movements', {
             product_id: data.product_id,
             quantity: data.boxes,
@@ -65,7 +65,7 @@ export const ProductMovementServices = {
             unit_price: data.unit_price,
             batch: data.batch,
             expiry_date: data.expiry_date,
-            quantity_type: data.type === 'Caja' ? 1 : data.type === 'Fracción' ? 0 : 2, // 2 for 'Ambas'
+            quantity_type: data.type === 'Box' ? 1 : data.type === 'Fraction' ? 0 : 2, // Fixed mapping
             movement_id: data.movement_id,
         });
         return response.data;
