@@ -295,30 +295,6 @@ const updateUnitPrice = () => {
   setFieldValue('unit_price', unitPrice > 0 ? Number(unitPrice.toFixed(2)) : 0);
 };
 
-
-// const onAddProduct = handleSubmit((values) => {
-//   if (!selectedProduct.value) {
-//     return; 
-//   }
-
-//   const product = {
-//     product_id: selectedProduct.value.id,
-//     boxes: values.boxes || 0,
-//     fractions: selectedProduct.value.state_fraction && (selectedType.value === 'Fracción' || selectedType.value === 'Ambas') ? (values.fractions || 0) : 0,
-//     name: selectedProduct.value.name,
-//     type: selectedType.value,
-//     lot: values.lot,
-//     expiry_date: values.expiry_date,
-//     unit_price: values.unit_price,
-//   };
-
-//   emit('add-product', product);
-//   resetForm();
-//   selectedProduct.value = null;
-//   selectedType.value = 'Caja';
-//   emit('emit-close', false);
-// });
-
 const onAddProduct = handleSubmit(async (values) => {
   if (!selectedProduct.value) {
     return;

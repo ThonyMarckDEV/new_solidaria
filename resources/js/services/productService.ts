@@ -19,6 +19,7 @@ export interface ProductMovementRequest {
     expiry_date: string;
     unit_price: number;
     total_price: number;
+    movement_id: number; // Nuevo campo para movement_id
 }
 
 export interface ProductMovementResponse {
@@ -82,6 +83,7 @@ export const ProductServices = {
             batch: data.lot,
             expiry_date: data.expiry_date,
             quantity_type: data.type === 'Caja' ? 1 : data.type === 'Fracción' ? 0 : 2, // 2 for 'Ambas'
+            movement_id: data.movement_id, // movement_id
         });
         return response.data;
     },

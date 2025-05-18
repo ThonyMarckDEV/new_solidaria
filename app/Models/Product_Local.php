@@ -21,6 +21,7 @@ class Product_Local extends Model
         'stock_max',
     ];
 
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class, 'product_id', 'id');
