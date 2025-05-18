@@ -20,19 +20,18 @@ class ProductMovementController extends Controller
         $this->pipeline = $pipeline;
     }
 
-   public function getProductMovements($movementId)
+    public function getProductMovements($movementId)
     {
         try {
-            // Load movement with product_movements and their related product and laboratory
+
             $movement = Movement::with('product_movements.product.laboratory')->findOrFail($movementId);
 
-            // Initialize product movements collection
+
             $productMovements = $movement->product_movements ?? collect([]);
 
-            // Log the raw product movements for debugging
             Log::info('Product movements for movement_id ' . $movementId, ['count' => $productMovements->count(), 'data' => $productMovements->toArray()]);
 
-            // Map product movements to the desired format
+
             $formattedMovements = $productMovements->map(function ($pm) {
                 return [
                     'id' => $pm->id,
@@ -59,9 +58,31 @@ class ProductMovementController extends Controller
                 ];
             });
 
-            $subtotal = $formattedMovements->sum('totalPrice');
-            $tax = $subtotal * 0.18;
-            $total = $subtotal + $tax;
+            // Calculate totals respecting igv_status
+            $tasaIgv = 0.18;
+            $totalSubtotal = 0;
+            $totalIgv = 0;
+            $totalTotal = 0;
+
+            foreach ($productMovements as $pm) {
+                $totalPrice = $pm->total_price ?? 0;
+
+                if ($movement->igv_status == 1) {
+                    // IGV included in total_price
+                    $subtotal = $totalPrice / (1 + $tasaIgv);
+                    $igv = $totalPrice - $subtotal;
+                    $total = $totalPrice;
+                } else {
+                    // IGV not included
+                    $subtotal = $totalPrice;
+                    $igv = $subtotal * $tasaIgv;
+                    $total = $subtotal + $igv;
+                }
+
+                $totalSubtotal += $subtotal;
+                $totalIgv += $igv;
+                $totalTotal += $total;
+            }
 
             // Log the formatted response
             Log::info('Formatted product movements response', ['movement_id' => $movementId, 'data' => $formattedMovements->toArray()]);
@@ -70,9 +91,9 @@ class ProductMovementController extends Controller
                 'success' => true,
                 'message' => 'Product movements fetched successfully',
                 'data' => $formattedMovements,
-                'subtotal' => number_format($subtotal, 2),
-                'tax' => number_format($tax, 2),
-                'total' => number_format($total, 2),
+                'subtotal' => number_format($totalSubtotal, 2),
+                'tax' => number_format($totalIgv, 2),
+                'total' => number_format($totalTotal, 2),
             ]);
         } catch (ModelNotFoundException $e) {
             Log::error('Movement not found', ['movement_id' => $movementId, 'error' => $e->getMessage()]);
@@ -157,4 +178,5 @@ class ProductMovementController extends Controller
             ], 500);
         }
     }
+    
 }
