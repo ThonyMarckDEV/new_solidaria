@@ -204,7 +204,7 @@ const errorMessage = ref<string>('');
 
 // Pagination state
 const currentPage = ref<number>(1);
-const itemsPerPage = ref<number>(5); // Hardcoded to 5
+const itemsPerPage = ref<number>(5);
 const searchQuery = ref<string>('');
 
 // Pagination meta for Pagination.vue
