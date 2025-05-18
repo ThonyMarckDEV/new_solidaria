@@ -52,6 +52,7 @@ export interface ProductMovementResponse {
 export interface ProductMovementDeleteResponse {
     success: boolean;
     message: string;
+    error?: string
 }
 
 export const ProductMovementServices = {
@@ -74,7 +75,9 @@ export const ProductMovementServices = {
     // Fetch product movements for a specific movement
     async getProductMovements(movementId: number): Promise<ProductMovementResponse> {
         try {
-            const response = await axios.get(`/panel/movements/${movementId}/product-movements`);
+            const response = await axios.get('/panel/listar-product-movements', {
+               params: { movementId }
+            });
             return response.data;
         } catch (error) {
             console.error('Error fetching product movements:', error);
@@ -83,13 +86,18 @@ export const ProductMovementServices = {
     },
 
     // Delete a product movement
-    async deleteProductMovement(id: number): Promise<ProductMovementDeleteResponse> {
+    async deleteProductMovement(productId: number, movementId: number): Promise<ProductMovementDeleteResponse> {
         try {
-            const response = await axios.delete(`/api/panel/product-movements/${id}`);
+            const response = await axios.delete('/panel/product-movements', {
+                data: {
+                    product_id: productId,
+                    movement_id: movementId,
+                },
+            });
             return response.data;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error deleting product movement:', error);
             throw error;
         }
-    },
+    }
 };

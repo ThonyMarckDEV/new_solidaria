@@ -20,16 +20,21 @@ class ProductMovementController extends Controller
         $this->pipeline = $pipeline;
     }
 
-    public function getProductMovements($movementId)
+    public function listProductMovements(Request $request)
     {
         try {
+            $request->validate([
+                'movementId' => 'required|integer|exists:movements,id'
+            ]);
+
+            $movementId = $request->query('movementId');
 
             $movement = Movement::with('product_movements.product.laboratory')->findOrFail($movementId);
 
 
             $productMovements = $movement->product_movements ?? collect([]);
 
-            Log::info('Product movements for movement_id ' . $movementId, ['count' => $productMovements->count(), 'data' => $productMovements->toArray()]);
+          //  Log::info('Product movements for movement_id ' . $movementId, ['count' => $productMovements->count(), 'data' => $productMovements->toArray()]);
 
 
             $formattedMovements = $productMovements->map(function ($pm) {
@@ -85,7 +90,7 @@ class ProductMovementController extends Controller
             }
 
             // Log the formatted response
-            Log::info('Formatted product movements response', ['movement_id' => $movementId, 'data' => $formattedMovements->toArray()]);
+           // Log::info('Formatted product movements response', ['movement_id' => $movementId, 'data' => $formattedMovements->toArray()]);
 
             return response()->json([
                 'success' => true,
@@ -96,14 +101,14 @@ class ProductMovementController extends Controller
                 'total' => number_format($totalTotal, 2),
             ]);
         } catch (ModelNotFoundException $e) {
-            Log::error('Movement not found', ['movement_id' => $movementId, 'error' => $e->getMessage()]);
+            //Log::error('Movement not found', ['movement_id' => $movementId, 'error' => $e->getMessage()]);
             return response()->json([
                 'success' => false,
                 'message' => 'Movement not found',
                 'error' => $e->getMessage(),
             ], 404);
         } catch (\Exception $e) {
-            Log::error('Error fetching product movements', ['movement_id' => $movementId, 'error' => $e->getMessage()]);
+            //Log::error('Error fetching product movements', ['movement_id' => $movementId, 'error' => $e->getMessage()]);
             return response()->json([
                 'success' => false,
                 'message' => 'Error fetching product movements',
@@ -161,15 +166,30 @@ class ProductMovementController extends Controller
         }
     }
 
-    public function delete($id)
+    public function delete(Request $request)
     {
         try {
-            $productMovement = ProductMovement::findOrFail($id);
+            $validated = $request->validate([
+                'product_id' => 'required|integer|exists:product_movements,product_id',
+                'movement_id' => 'required|integer|exists:product_movements,movement_id',
+            ]);
+
+            $productMovement = ProductMovement::where('product_id', $validated['product_id'])
+                ->where('movement_id', $validated['movement_id'])
+                ->firstOrFail();
+
             $productMovement->delete();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Product movement deleted successfully',
             ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product movement not found',
+                'error' => $e->getMessage(),
+            ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

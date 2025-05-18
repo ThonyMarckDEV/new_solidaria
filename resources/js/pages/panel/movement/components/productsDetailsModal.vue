@@ -421,18 +421,18 @@ const addProductFromModal = async (product: ProductMovement) => {
 };
 
 // Remove product from the list
-const removeProduct = async (id: number) => {
+const removeProduct = async (productId: number) => {
     try {
-        await ProductMovementServices.deleteProductMovement(id);
-        productMovements.value.data = productMovements.value.data.filter(p => p.id !== id);
+        await ProductMovementServices.deleteProductMovement(productId, props.movementData.id);
+        productMovements.value.data = productMovements.value.data.filter(p => p.productId !== productId);
         updateTotals();
         if (paginatedProducts.value.length === 0 && currentPage.value > 1) {
             currentPage.value--;
         }
         emit('refresh-movements');
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error deleting product movement:', error);
-        errorMessage.value = 'Failed to delete product. Please try again.';
+        errorMessage.value = error.response?.data?.message || 'Failed to delete product. Please try again.';
     }
 };
 
