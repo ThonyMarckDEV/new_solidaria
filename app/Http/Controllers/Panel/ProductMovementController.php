@@ -3,8 +3,12 @@
 namespace App\Http\Controllers\Panel;
 
 use App\Http\Controllers\Controller;
+use App\Models\Movement;
+use App\Models\ProductMovement;
 use App\Pipelines\Movement\StoreProductMovementPipeline;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class ProductMovementController extends Controller
@@ -16,10 +20,80 @@ class ProductMovementController extends Controller
         $this->pipeline = $pipeline;
     }
 
+   public function getProductMovements($movementId)
+    {
+        try {
+            // Load movement with product_movements and their related product and laboratory
+            $movement = Movement::with('product_movements.product.laboratory')->findOrFail($movementId);
+
+            // Initialize product movements collection
+            $productMovements = $movement->product_movements ?? collect([]);
+
+            // Log the raw product movements for debugging
+            Log::info('Product movements for movement_id ' . $movementId, ['count' => $productMovements->count(), 'data' => $productMovements->toArray()]);
+
+            // Map product movements to the desired format
+            $formattedMovements = $productMovements->map(function ($pm) {
+                return [
+                    'id' => $pm->id,
+                    'productId' => $pm->product_id,
+                    'quantity' => $pm->quantity,
+                    'fractionQuantity' => $pm->fraction_quantity,
+                    'unitPrice' => number_format($pm->unit_price, 2),
+                    'unitPriceEx' => number_format($pm->unit_price, 2),
+                    'fractionPrice' => number_format($pm->fraction_price, 2),
+                    'totalPrice' => number_format($pm->total_price, 2),
+                    'labName' => $pm->product->laboratory->name ?? 'N/A',
+                    'productName' => $pm->product->name ?? 'Unknown',
+                    'unitPrices' => number_format($pm->unit_price, 2) . ' - ' . number_format($pm->fraction_price, 2),
+                    'batch' => $pm->batch,
+                    'expiryDate' => $pm->expiry_date,
+                    'expiryDateDisplay' => \Carbon\Carbon::parse($pm->expiry_date)->format('d-m-Y'),
+                    'movementId' => $pm->movement_id,
+                    'movementTypeId' => $pm->type_movement_id ?? 1,
+                    'quantityStatus' => $pm->quantity_type,
+                    'quantityType' => $pm->quantity_type === 1 ? 'Box' : ($pm->quantity_type === 0 ? 'Fraction' : 'Both'),
+                    'totalQuantity' => (string) ($pm->quantity + $pm->fraction_quantity),
+                    'generalPrice' => number_format($pm->unit_price, 2) . ' - ' . number_format($pm->fraction_price, 2),
+                    'status' => $pm->status ?? 1,
+                ];
+            });
+
+            $subtotal = $formattedMovements->sum('totalPrice');
+            $tax = $subtotal * 0.18;
+            $total = $subtotal + $tax;
+
+            // Log the formatted response
+            Log::info('Formatted product movements response', ['movement_id' => $movementId, 'data' => $formattedMovements->toArray()]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product movements fetched successfully',
+                'data' => $formattedMovements,
+                'subtotal' => number_format($subtotal, 2),
+                'tax' => number_format($tax, 2),
+                'total' => number_format($total, 2),
+            ]);
+        } catch (ModelNotFoundException $e) {
+            Log::error('Movement not found', ['movement_id' => $movementId, 'error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Movement not found',
+                'error' => $e->getMessage(),
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Error fetching product movements', ['movement_id' => $movementId, 'error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching product movements',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function store(Request $request)
     {
         try {
-            // Validate the request to ensure movement_id is provided
             $validated = $request->validate([
                 'product_id' => 'required|integer|exists:products,id',
                 'quantity' => 'required|integer|min:0',
@@ -29,23 +103,54 @@ class ProductMovementController extends Controller
                 'batch' => 'required|string',
                 'expiry_date' => 'required|date',
                 'quantity_type' => 'required|in:0,1,2',
-                'movement_id' => 'required|integer|exists:movements,id', // Validate movement_id
+                'movement_id' => 'required|integer|exists:movements,id',
             ]);
 
-            // Pass the validated data, including movement_id, to the pipeline
             $result = $this->pipeline->handle($validated, $validated['movement_id']);
 
-            return response()->json($result, 201);
+            // Assuming pipeline returns the created product movement
+            return response()->json([
+                'success' => true,
+                'message' => 'Product movement created successfully',
+                'data' => [
+                    'id' => $result['id'],
+                    'product_id' => $validated['product_id'],
+                    'quantity' => $validated['quantity'],
+                    'fraction_quantity' => $validated['fraction_quantity'],
+                    'total_price' => $validated['total_price'],
+                    'unit_price' => $validated['unit_price'],
+                    'batch' => $validated['batch'],
+                    'expiry_date' => $validated['expiry_date'],
+                ],
+            ], 201);
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Errores de validación',
+                'message' => 'Validation errors',
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al crear el movimiento de producto',
+                'message' => 'Error creating product movement',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function delete($id)
+    {
+        try {
+            $productMovement = ProductMovement::findOrFail($id);
+            $productMovement->delete();
+            return response()->json([
+                'success' => true,
+                'message' => 'Product movement deleted successfully',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting product movement',
                 'error' => $e->getMessage(),
             ], 500);
         }

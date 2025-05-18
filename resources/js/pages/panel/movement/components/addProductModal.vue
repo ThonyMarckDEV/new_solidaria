@@ -2,14 +2,14 @@
   <Dialog :open="modal" @update:open="emit('emit-close', false)">
     <DialogContent class="sm:max-w-[425px]">
       <DialogHeader>
-        <DialogTitle>Nuevo Movimiento</DialogTitle>
+        <DialogTitle>New Product Movement</DialogTitle>
       </DialogHeader>
 
       <!-- Form to Add Product -->
       <form @submit.prevent="onAddProduct" class="space-y-4">
         <FormField v-slot="{ componentField }" name="product">
           <FormItem>
-            <FormLabel>Producto *</FormLabel>
+            <FormLabel>Product *</FormLabel>
             <FormControl>
               <ProductCombobox v-bind="componentField" @select="onProductSelect" :initialId="null" />
             </FormControl>
@@ -17,43 +17,42 @@
           </FormItem>
         </FormField>
 
-        <!-- Type selection buttons (shown only if product is selected) -->
+        <!-- Type selection buttons -->
         <div v-if="selectedProduct" class="flex gap-2 mt-2">
           <Button
             type="button"
             variant="outline"
             size="sm"
-            :class="{ 'bg-gray-200 dark:bg-gray-700': selectedType === 'Caja' }"
-            @click="selectedType = 'Caja'"
+            :class="{ 'bg-gray-200 dark:bg-gray-700': selectedType === 'Box' }"
+            @click="selectedType = 'Box'"
           >
-            Caja
+            Cajas
           </Button>
           <Button
             v-if="selectedProduct?.state_fraction"
             type="button"
             variant="outline"
             size="sm"
-            :class="{ 'bg-gray-200 dark:bg-gray-700': selectedType === 'Fracción' }"
-            @click="selectedType = 'Fracción'"
+            :class="{ 'bg-gray-200 dark:bg-gray-700': selectedType === 'Fraction' }"
+            @click="selectedType = 'Fraction'"
           >
-            Fracción
+            Fracciones
           </Button>
           <Button
             v-if="selectedProduct?.state_fraction"
             type="button"
             variant="outline"
             size="sm"
-            :class="{ 'bg-gray-200 dark:bg-gray-700': selectedType === 'Ambas' }"
-            @click="selectedType = 'Ambas'"
+            :class="{ 'bg-gray-200 dark:bg-gray-700': selectedType === 'Both' }"
+            @click="selectedType = 'Both'"
           >
-            Ambas
+            Ambos
           </Button>
         </div>
 
-        <!-- Quantity inputs based on selectedType and state_fraction -->
+        <!-- Quantity inputs -->
         <div v-if="selectedProduct" class="space-y-4">
-          <!-- Caja input -->
-          <FormField v-if="selectedType === 'Caja' || selectedType === 'Ambas'" v-slot="{ componentField }" name="boxes">
+          <FormField v-if="selectedType === 'Box' || selectedType === 'Both'" v-slot="{ componentField }" name="boxes">
             <FormItem>
               <FormLabel>Cajas</FormLabel>
               <FormControl>
@@ -62,21 +61,20 @@
                   v-bind="componentField"
                   min="0"
                   @input="handleBoxesInput"
-                  placeholder="Ingrese cantidad de cajas"
+                  placeholder="Enter number of boxes"
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           </FormField>
 
-          <!-- Fracción input -->
           <FormField
-            v-if="selectedProduct?.state_fraction && (selectedType === 'Fracción' || selectedType === 'Ambas')"
+            v-if="selectedProduct?.state_fraction && (selectedType === 'Fraction' || selectedType === 'Both')"
             v-slot="{ componentField }"
             name="fractions"
           >
             <FormItem>
-              <FormLabel>Fracciones (Máximo {{ selectedProduct?.fraction }})</FormLabel>
+              <FormLabel>Fracciones (Max {{ selectedProduct?.fraction }})</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -84,7 +82,7 @@
                   :max="selectedProduct?.fraction"
                   min="0"
                   @input="handleFractionsInput"
-                  placeholder="Ingrese cantidad de fracciones"
+                  placeholder="Enter number of fractions"
                 />
               </FormControl>
               <FormMessage />
@@ -92,11 +90,11 @@
           </FormField>
         </div>
 
-        <FormField v-slot="{ componentField }" name="lot">
+        <FormField v-slot="{ componentField }" name="batch">
           <FormItem>
             <FormLabel>Lote *</FormLabel>
             <FormControl>
-              <Input v-bind="componentField" placeholder="" />
+              <Input v-bind="componentField" placeholder="Enter batch number" />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -104,7 +102,7 @@
 
         <FormField v-slot="{ componentField }" name="expiry_date">
           <FormItem>
-            <FormLabel>Fecha de Vencimiento *</FormLabel>
+            <FormLabel>Fecha Vencimiento *</FormLabel>
             <FormControl>
               <Input type="date" v-bind="componentField" />
             </FormControl>
@@ -120,7 +118,7 @@
                 type="number"
                 step="0.01"
                 v-bind="componentField"
-                placeholder="Ingrese el precio"
+                placeholder="Enter total price"
                 @input="updateUnitPrice"
               />
             </FormControl>
@@ -140,8 +138,8 @@
 
         <!-- Footer Actions -->
         <div class="flex justify-end gap-3">
-          <Button type="button" variant="outline" @click="emit('emit-close', false)">Cancelar</Button>
-          <Button type="submit">Guardar</Button>
+          <Button type="button" variant="outline" @click="emit('emit-close', false)">Cancel</Button>
+          <Button type="submit">Save</Button>
         </div>
       </form>
     </DialogContent>
@@ -158,7 +156,7 @@ import { toTypedSchema } from '@vee-validate/zod';
 import { useForm } from 'vee-validate';
 import * as z from 'zod';
 import { ref } from 'vue';
-import { ProductServices } from '@/services/productService';
+import { ProductMovementServices, ProductMovement } from '@/services/productMovementService';
 
 export interface ProductResource {
   id: number;
@@ -173,49 +171,38 @@ export interface ProductResource {
   category: string;
   fraction: number;
   state_fraction: boolean;
-  state_igv: boolean;
+  state_tax: boolean;
   state: boolean;
 }
 
 // Props and Emits
 const props = defineProps<{
   modal: boolean;
-  movementId: number; 
+  movementId: number;
 }>();
 
 const emit = defineEmits<{
   (e: 'emit-close', open: boolean): void;
-  (e: 'add-product', product: {
-    product_id: number;
-    boxes: number;
-    fractions: number;
-    name: string;
-    type: string;
-    lot: string;
-    expiry_date: string;
-    unit_price: number;
-    total_price: number;
-    movement_id: number;
-  }): void;
+  (e: 'add-product', product: ProductMovement): void;
 }>();
 
 // State
 const selectedProduct = ref<ProductResource | null>(null);
-const selectedType = ref<string>('Caja');
+const selectedType = ref<string>('Box');
 
 // Form validation schema
 const formSchema = toTypedSchema(
   z.object({
-    product: z.string().min(1, 'Seleccione un producto'),
-    boxes: z.number({ message: 'La cantidad de cajas debe ser un número' }).min(0, 'La cantidad de cajas debe ser mayor o igual a 0').optional(),
+    product: z.string().min(1, 'Select a product'),
+    boxes: z.number({ message: 'Number of boxes must be a number' }).min(0, 'Number of boxes must be at least 0').optional(),
     fractions: z
-      .number({ message: 'La cantidad de fracciones debe ser un número' })
-      .min(0, 'La cantidad de fracciones debe ser mayor o igual a 0')
+      .number({ message: 'Number of fractions must be a number' })
+      .min(0, 'Number of fractions must be at least 0')
       .optional(),
-    lot: z.string().min(1, 'El lote es requerido'),
-    expiry_date: z.string().min(1, 'La fecha de vencimiento es requerida'),
-    total_price: z.number({ message: 'El precio total debe ser un número' }).min(0, 'El precio total debe ser mayor o igual a 0'),
-    unit_price: z.number({ message: 'El precio unitario debe ser un número' }).min(0, 'El precio unitario debe ser mayor o igual a 0'),
+    batch: z.string().min(1, 'Batch is required'),
+    expiry_date: z.string().min(1, 'Expiry date is required'),
+    total_price: z.number({ message: 'Total price must be a number' }).min(0, 'Total price must be at least 0'),
+    unit_price: z.number({ message: 'Unit price must be a number' }).min(0, 'Unit price must be at least 0'),
   })
 );
 
@@ -226,7 +213,7 @@ const { handleSubmit, setFieldValue, resetForm, values } = useForm({
     product: '',
     boxes: 0,
     fractions: 0,
-    lot: '',
+    batch: '',
     expiry_date: '',
     total_price: 0,
     unit_price: 0,
@@ -236,7 +223,7 @@ const { handleSubmit, setFieldValue, resetForm, values } = useForm({
 // Handle product selection
 const onProductSelect = (product: ProductResource | null) => {
   selectedProduct.value = product;
-  selectedType.value = 'Caja';
+  selectedType.value = 'Box';
   if (product) {
     setFieldValue('product', product.name);
     setFieldValue('boxes', 0);
@@ -251,18 +238,18 @@ const onProductSelect = (product: ProductResource | null) => {
 // Handle boxes input
 const handleBoxesInput = () => {
   const boxes = values.boxes || 0;
-  setFieldValue('boxes', Math.max(0, boxes)); 
+  setFieldValue('boxes', Math.max(0, boxes));
   updateUnitPrice();
 };
 
-
+// Handle fractions input
 const handleFractionsInput = () => {
   if (!selectedProduct.value) return;
 
   let fractions = values.fractions || 0;
   const maxFractions = selectedProduct.value.fraction;
 
-  if (selectedType.value === 'Ambas' && fractions > maxFractions) {
+  if (selectedType.value === 'Both' && fractions > maxFractions) {
     const extraBoxes = Math.floor(fractions / maxFractions);
     fractions = fractions % maxFractions;
     setFieldValue('boxes', (values.boxes || 0) + extraBoxes);
@@ -276,7 +263,7 @@ const handleFractionsInput = () => {
   updateUnitPrice();
 };
 
-
+// Update unit price
 const updateUnitPrice = () => {
   const totalPrice = parseFloat(values.total_price) || 0;
   let unitPrice = 0;
@@ -284,32 +271,30 @@ const updateUnitPrice = () => {
   if (selectedProduct.value) {
     const boxes = parseFloat(values.boxes) || 0;
     const fractions = parseFloat(values.fractions) || 0;
-    const igvFactor = selectedProduct.value.state_igv ? 1.18 : 1;
+    const taxFactor = selectedProduct.value.state_tax ? 1.18 : 1;
 
-    if (selectedType.value === 'Caja') {
-      unitPrice = boxes > 0 ? (totalPrice / boxes) * igvFactor : 0;
-    } else if (selectedType.value === 'Fracción') {
-      unitPrice = fractions > 0 ? (totalPrice / fractions) * igvFactor : 0;
-    } else if (selectedType.value === 'Ambas') {
-      unitPrice = boxes > 0 ? (totalPrice / boxes) * igvFactor : 0;
+    if (selectedType.value === 'Box') {
+      unitPrice = boxes > 0 ? (totalPrice / boxes) * taxFactor : 0;
+    } else if (selectedType.value === 'Fraction') {
+      unitPrice = fractions > 0 ? (totalPrice / fractions) * taxFactor : 0;
+    } else if (selectedType.value === 'Both') {
+      unitPrice = boxes > 0 ? (totalPrice / boxes) * taxFactor : 0;
     }
   }
 
   setFieldValue('unit_price', unitPrice > 0 ? Number(unitPrice.toFixed(2)) : 0);
 };
 
+// Add product
 const onAddProduct = handleSubmit(async (values) => {
-  if (!selectedProduct.value) {
-    return;
-  }
+  if (!selectedProduct.value) return;
 
-  const product = {
+  const requestData = {
     product_id: selectedProduct.value.id,
     boxes: values.boxes || 0,
-    fractions: selectedProduct.value.state_fraction && (selectedType.value === 'Fracción' || selectedType.value === 'Ambas') ? (values.fractions || 0) : 0,
-    name: selectedProduct.value.name,
+    fractions: selectedProduct.value.state_fraction && (selectedType.value === 'Fraction' || selectedType.value === 'Both') ? (values.fractions || 0) : 0,
     type: selectedType.value,
-    lot: values.lot,
+    batch: values.batch,
     expiry_date: values.expiry_date,
     unit_price: values.unit_price,
     total_price: values.total_price,
@@ -317,27 +302,36 @@ const onAddProduct = handleSubmit(async (values) => {
   };
 
   try {
-    const response = await ProductServices.storeProductMovement({
-      product_id: product.product_id,
-      boxes: product.boxes,
-      fractions: product.fractions,
-      type: product.type,
-      lot: product.lot,
-      expiry_date: product.expiry_date,
-      unit_price: product.unit_price,
-      total_price: product.total_price,
-      movement_id: product.movement_id,
-    });
+    const response = await ProductMovementServices.storeProductMovement(requestData);
+    const newProduct: ProductMovement = {
+      id: response.data.id,
+      productId: selectedProduct.value.id,
+      quantity: requestData.boxes,
+      fractionQuantity: requestData.fractions,
+      unitPrice: requestData.unit_price.toFixed(2),
+      unitPriceEx: requestData.unit_price.toFixed(2),
+      fractionPrice: (requestData.unit_price / (selectedProduct.value.fraction || 1)).toFixed(2),
+      totalPrice: requestData.total_price.toFixed(2),
+      labName: selectedProduct.value.laboratory,
+      productName: selectedProduct.value.name,
+      unitPrices: `${requestData.unit_price.toFixed(2)} - ${(requestData.unit_price / (selectedProduct.value.fraction || 1)).toFixed(2)}`,
+      batch: requestData.batch,
+      expiryDate: requestData.expiry_date,
+      expiryDateDisplay: new Date(requestData.expiry_date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).split('/').reverse().join('-'),
+      movementId: props.movementId,
+      movementTypeId: 1, // Adjust based on actual movement type
+      quantityStatus: requestData.type === 'Box' ? 1 : requestData.type === 'Fraction' ? 0 : 2,
+      quantityType: requestData.type,
+      totalQuantity: (requestData.boxes + requestData.fractions).toString(),
+      generalPrice: `${requestData.unit_price.toFixed(2)} - ${(requestData.unit_price / (selectedProduct.value.fraction || 1)).toFixed(2)}`,
+      status: 1,
+    };
 
-    if (response.success) {
-      emit('add-product', product);
-      resetForm();
-      selectedProduct.value = null;
-      selectedType.value = 'Caja';
-      emit('emit-close', false);
-    } else {
-      console.error('Failed to add product movement:', response.message);
-    }
+    emit('add-product', newProduct);
+    resetForm();
+    selectedProduct.value = null;
+    selectedType.value = 'Box';
+    emit('emit-close', false);
   } catch (error) {
     console.error('Error adding product movement:', error);
   }

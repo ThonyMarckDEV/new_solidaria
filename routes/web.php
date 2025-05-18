@@ -98,7 +98,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         # list Inventory
         Route::get('listar-inventory', [InventoryController::class, 'listInventory'])->name('inventory.listar');
         # Adedd products to movement 
-        Route::post('/product-movements', [ProductMovementController::class, 'store'])->name('product-movements.store');
+        Route::get('/movements/{movementId}/product-movements', [ProductMovementController::class, 'getProductMovements']);
+        Route::post('/product-movements', [ProductMovementController::class, 'store']);
+        Route::delete('/product-movements/{id}', [ProductMovementController::class, 'delete']);
         # module sale
         // Route::resource('sales', SaleController::class);
         # Route group for inputs, selects and autocomplete
