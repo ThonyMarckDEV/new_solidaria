@@ -1,3 +1,4 @@
+<!-- indexMovement.vue -->
 <template>
     <Head title="Movimientos"></Head>
     <AppLayout :breadcrumbs="breadcrumbs">

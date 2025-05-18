@@ -1,3 +1,4 @@
+<!-- tableMovement.vue -->
 <template>
     <div class="container-table">
         <LoadingTable v-if="loading" :headers="13" :row-count="12" />

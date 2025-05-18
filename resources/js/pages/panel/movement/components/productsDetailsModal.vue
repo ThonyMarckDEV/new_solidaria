@@ -1,3 +1,4 @@
+<!-- productsDetailsModal.vue -->
 <template>
     <Dialog :open="modal" @update:open="closeModal">
         <DialogContent class="sm:max-w-[100vw] sm:max-h-[100vh] h-screen w-screen p-8 bg-gradient-to-br from-white to-emerald-50 dark:from-gray-800 dark:to-blue-900">
