@@ -29,8 +29,6 @@ Route::get('/', function () {
 Route::get('dashboard', [Dashboard::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
 
-
-
 # rutes no auth
 
 Route::resource('guides', GuideController::class);
@@ -104,6 +102,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('listar-product-movements', [ProductMovementController::class, 'listProductMovements']);
         # module sale
         // Route::resource('sales', SaleController::class);
+        #Print ProductoMovement
+        Route::get('/movements/{movement}/print', [MovementController::class, 'print'])->name('movements.print');
         # Route group for inputs, selects and autocomplete
         Route::prefix('inputs')->name('inputs.')->group(function () {
             # get product list

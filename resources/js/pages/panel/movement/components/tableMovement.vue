@@ -32,7 +32,6 @@
                                 <td class="cell-data text-center truncate">{{ formatDate(movement.credit_date) }}</td>
                                 <td class="cell-data text-center truncate">{{ movement.supplier.name }}</td>
                                 <td class="cell-data text-center truncate">{{ movement.user.name }}</td>
-                                <!-- Tipo Movimiento con Tailwind -->
                                 <td class="cell-data text-center truncate">
                                     <span :class="getTypeMovementClass(movement.typemovement.name)"
                                           class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium">
@@ -40,7 +39,6 @@
                                         {{ movement.typemovement.name }}
                                     </span>
                                 </td>
-                                <!-- Estado principal con Tailwind -->
                                 <td class="cell-status text-center truncate">
                                     <span v-if="movement.status === 1"
                                           class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
@@ -58,7 +56,6 @@
                                         Anulado
                                     </span>
                                 </td>
-                                <!-- Estado IGV con Tailwind -->
                                 <td class="cell-status text-center truncate">
                                     <span v-if="movement.igv_status === 1"
                                           class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
@@ -71,7 +68,6 @@
                                         Sin IGV
                                     </span>
                                 </td>
-                                <!-- Tipo de Pago con Tailwind -->
                                 <td class="cell-data text-center truncate">
                                     <span :class="getPaymentTypeClass(movement.payment_type)"
                                           class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium">
@@ -79,7 +75,6 @@
                                         {{ movement.payment_type === 'contado' ? 'Contado' : 'Crédito' }}
                                     </span>
                                 </td>
-                                <!-- Subtotal, IGV, Total -->
                                 <td class="cell-data text-center truncate">{{ movement.subtotal }}</td>
                                 <td class="cell-data text-center truncate">{{ movement.igv }}</td>
                                 <td class="cell-data text-center truncate">{{ movement.total }}</td>
@@ -115,6 +110,16 @@
                                             <Trash class="action-icon h-4 w-4" />
                                             <span class="sr-only">Eliminar movimiento</span>
                                         </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            class="action-button p-1"
+                                            @click="openPrintModal(movement)"
+                                            title="Imprimir comprobante"
+                                        >
+                                            <Printer class="action-icon h-4 w-4" />
+                                            <span class="sr-only">Imprimir comprobante</span>
+                                        </Button>
                                     </div>
                                 </td>
                             </TableRow>
@@ -131,19 +136,26 @@
                 <PaginationMovement :meta="movementPaginate" @page-change="$emit('page-change', $event)" />
             </div>
         </div>
+        <!-- tableMovement.vue -->
+        <PrintReceiptModal
+            v-if="showPrintModal"
+            :movement="selectedMovement"
+            @close="closePrintModal"
+        />
     </div>
 </template>
 
 <script setup lang="ts">
 import LoadingTable from '@/components/loadingTable.vue';
 import PaginationMovement from '@/components/pagination.vue';
+import PrintReceiptModal from '@/components/PrintReceiptModal.vue';
 import Button from '@/components/ui/button/Button.vue';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/toast';
 import { Pagination } from '@/interface/paginacion';
 import { SharedData } from '@/types';
 import { usePage } from '@inertiajs/vue3';
-import { PackagePlus, Trash, UserPen } from 'lucide-vue-next';
+import { PackagePlus, Trash, UserPen, Printer } from 'lucide-vue-next';
 import { onMounted, ref } from 'vue';
 import { MovementResource } from '../interface/Movement';
 
@@ -159,6 +171,9 @@ const emit = defineEmits<{
 const page = usePage<SharedData>();
 
 const message = ref(page.props.flash?.message || '');
+
+const showPrintModal = ref(false);
+const selectedMovement = ref<MovementResource | null>(null);
 
 onMounted(() => {
     if (message.value) {
@@ -187,6 +202,16 @@ const openModalProductsDetails = (id: number) => {
     emit('open-modal-products-details', id);
 };
 
+const openPrintModal = (movement: MovementResource) => {
+    selectedMovement.value = movement;
+    showPrintModal.value = true;
+};
+
+const closePrintModal = () => {
+    showPrintModal.value = false;
+    selectedMovement.value = null;
+};
+
 const formatDate = (dateString) => {
     if (!dateString) return '';
     
@@ -207,7 +232,6 @@ const formatDate = (dateString) => {
     }
 };
 
-// Función para determinar la clase del tipo de pago con Tailwind
 const getPaymentTypeClass = (tipoPago) => {
     if (tipoPago === 'contado') {
         return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 [&>span]:bg-green-500 dark:[&>span]:bg-green-400';
@@ -216,7 +240,6 @@ const getPaymentTypeClass = (tipoPago) => {
     }
 };
 
-// Función para determinar la clase del tipo de movimiento con Tailwind
 const getTypeMovementClass = (tipoMovimiento) => {
     switch(tipoMovimiento) {
         case 'Factura':
