@@ -109,7 +109,7 @@
                         <TableHeader>
                             <TableRow class="bg-emerald-100 dark:bg-blue-800">
                                 <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Tipo</TableHead>
-                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Cantidad</TableHead>
+                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Cant. Cajas - Fracciones</TableHead>
                                 <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Producto</TableHead>
                                 <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Laboratorio</TableHead>
                                 <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Lote</TableHead>
@@ -137,7 +137,7 @@
                                         product.quantityType 
                                     }}
                                 </td>
-                                <td class="text-center text-gray-800 dark:text-gray-200 py-3">{{ product.totalQuantity }}</td>
+                                <td class="text-center text-gray-800 dark:text-gray-200 py-3">{{ product.quantity }} - {{ product.fractionQuantity }}</td>
                                 <td class="text-center text-gray-800 dark:text-gray-200 py-3">{{ product.productName }}</td>
                                 <td class="text-center text-gray-800 dark:text-gray-200 py-3">{{ product.labName }}</td>
                                 <td class="text-center text-gray-800 dark:text-gray-200 py-3">{{ product.batch }}</td>
