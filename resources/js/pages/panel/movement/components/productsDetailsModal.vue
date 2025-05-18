@@ -1,4 +1,4 @@
-<!-- productsDetailsModal.vue -->
+<!-- components/productsDetailsModal.vue -->
 <template>
     <Dialog :open="modal" @update:open="closeModal">
         <DialogContent class="sm:max-w-[100vw] sm:max-h-[100vh] h-screen w-screen p-8 bg-gradient-to-br from-white to-emerald-50 dark:from-gray-800 dark:to-blue-900">
@@ -229,7 +229,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: 'emit-close', open: boolean): void;
-    (e: 'add-products', movementId: number, products: ProductMovement[]): void;
+    (e: 'add-products', movementId: number, products: { product_id: number; quantity: number }[]): void;
+    (e: 'refresh-movements'): void;
 }>();
 
 // State for product movements and error handling
@@ -266,11 +267,15 @@ const formatDate = (dateString: string) => {
     }
 };
 
-// Calculate price with tax (assuming 18% tax)
+// Calculate price with tax
 const calculatePriceWithTax = (unitPrice: string) => {
     if (!unitPrice) return '0.00';
-    const tax = 0.18; // 18% tax
-    return (parseFloat(unitPrice) * (1 + tax)).toFixed(2);
+    const tax = 0.18;
+    const price = parseFloat(unitPrice);
+    if (props.movementData.igv_status === 1) {
+        return price.toFixed(2);
+    }
+    return (price * (1 + tax)).toFixed(2);
 };
 
 // Filter products based on search
@@ -363,17 +368,14 @@ const onItemsPerPageChange = () => {
 };
 
 const onSearch = () => {
-
     currentPage.value = 1;
 };
-
 
 watch(filteredProducts, () => {
     if (currentPage.value > totalPages.value) {
         currentPage.value = Math.max(1, totalPages.value);
     }
 });
-
 
 const fetchProductMovements = async () => {
     try {
@@ -404,8 +406,13 @@ const addProductFromModal = async (product: ProductMovement) => {
     try {
         productMovements.value.data.push(product);
         updateTotals();
-        await fetchProductMovements(); // Refresh to ensure consistency
+        await fetchProductMovements();
         errorMessage.value = '';
+        emit('refresh-movements');
+        emit('add-products', props.movementData.id, [{
+            product_id: product.productId,
+            quantity: parseInt(product.totalQuantity),
+        }]);
     } catch (error) {
         console.error('Error adding product:', error);
         errorMessage.value = 'Failed to add product. Please try again.';
@@ -419,11 +426,10 @@ const removeProduct = async (id: number) => {
         await ProductMovementServices.deleteProductMovement(id);
         productMovements.value.data = productMovements.value.data.filter(p => p.id !== id);
         updateTotals();
-        
-        // If the current page becomes empty after removal, go to the previous page
         if (paginatedProducts.value.length === 0 && currentPage.value > 1) {
             currentPage.value--;
         }
+        emit('refresh-movements');
     } catch (error) {
         console.error('Error deleting product movement:', error);
         errorMessage.value = 'Failed to delete product. Please try again.';
@@ -431,16 +437,39 @@ const removeProduct = async (id: number) => {
 };
 
 const updateTotals = () => {
-    const subtotal = productMovements.value.data.reduce((sum, p) => sum + parseFloat(p.totalPrice), 0);
-    const tax = subtotal * 0.18; // 18% tax
-    const total = subtotal + tax;
+    const tasaIgv = 0.18;
+    let subtotal = 0;
+    let tax = 0;
+    let total = 0;
+
+    productMovements.value.data.forEach((p) => {
+        const totalPrice = parseFloat(p.totalPrice) || 0;
+        if (props.movementData.igv_status === 1) {
+            const sub = totalPrice / (1 + tasaIgv);
+            const igv = totalPrice - sub;
+            subtotal += sub;
+            tax += igv;
+            total += totalPrice;
+        } else {
+            const sub = totalPrice;
+            const igv = sub * tasaIgv;
+            subtotal += sub;
+            tax += igv;
+            total += sub + igv;
+        }
+    });
+
     productMovements.value.subtotal = subtotal.toFixed(2);
     productMovements.value.tax = tax.toFixed(2);
     productMovements.value.total = total.toFixed(2);
 };
 
 const onSubmit = () => {
-    emit('add-products', props.movementData.id, productMovements.value.data);
+    const products = productMovements.value.data.map(p => ({
+        product_id: p.productId,
+        quantity: parseInt(p.totalQuantity),
+    }));
+    emit('add-products', props.movementData.id, products);
     closeModal();
 };
 

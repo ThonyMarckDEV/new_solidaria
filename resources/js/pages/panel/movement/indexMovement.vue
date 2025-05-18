@@ -1,4 +1,4 @@
-<!-- indexMovement.vue -->
+<!-- pages/panel/movement/indexMovement.vue -->
 <template>
     <Head title="Movimientos"></Head>
     <AppLayout :breadcrumbs="breadcrumbs">
@@ -14,12 +14,12 @@
                     @open-modal-products-details="openModalProductsDetails"
                     :loading="principal.loading"
                 />
-               <ProductsDetailsModal
+                <ProductsDetailsModal
                     v-if="principal.statusModal.addProducts"
                     :modal="principal.statusModal.addProducts"
                     :movement-data="principal.movementData"
                     @emit-close="closeProductsDetailsModal"
-                    @add-products="addProducts"
+                    @refresh-movements="refreshMovements"
                 />
                 <EditMovement
                     v-if="principal.statusModal.update"
@@ -53,6 +53,9 @@ import EditMovement from './components/editMovement.vue';
 import TableMovement from './components/tableMovement.vue';
 import { MovementUpdateRequest } from './interface/Movement';
 import ProductsDetailsModal from './components/productsDetailsModal.vue';
+import { useToast } from '@/components/ui/toast';
+
+const { toast } = useToast();
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -82,8 +85,8 @@ const getIdMovement = async (id: number) => {
     console.log('Opening EditMovement for ID:', id);
     await getMovementById(id);
     principal.statusModal.update = true;
-    principal.statusModal.addProducts = false; // Ensure products modal is closed
-    principal.statusModal.delete = false; // Ensure delete modal is closed
+    principal.statusModal.addProducts = false;
+    principal.statusModal.delete = false;
 };
 
 // Open products details modal
@@ -91,13 +94,13 @@ const openModalProductsDetails = async (id: number) => {
     console.log('Opening ProductsDetailsModal for ID:', id);
     await getMovementById(id);
     principal.statusModal.addProducts = true;
-    principal.statusModal.update = false; // Ensure edit modal is closed
-    principal.statusModal.delete = false; // Ensure delete modal is closed
+    principal.statusModal.update = false;
+    principal.statusModal.delete = false;
 };
 
 const closeProductsDetailsModal = () => {
     principal.statusModal.addProducts = false;
-    principal.movementData = {} as MovementResource; // Clear movement data
+    principal.movementData = {} as MovementResource;
 };
 
 // close modal
@@ -132,14 +135,13 @@ const searchMovement = (text: string) => {
     loadingMovements(1, text);
 };
 
-const addProducts = async (movementId: number, products: { product_id: number; quantity: number }[]) => {
-    try {
-        await MovementServices.addProducts(movementId, products);
-        principal.statusModal.addProducts = false;
-        loadingMovements(); // Refresh the table
-    } catch (error) {
-        console.error('Error adding products:', error);
-    }
+// refresh movements
+const refreshMovements = () => {
+    loadingMovements(principal.paginacion.current_page);
+    toast({
+        title: 'Movimientos actualizados',
+        description: 'La lista de movimientos ha sido refrescada.',
+    });
 };
 </script>
 
