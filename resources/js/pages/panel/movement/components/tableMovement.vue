@@ -1,6 +1,6 @@
 <template>
     <div class="container-table">
-        <LoadingTable v-if="loading" :headers="10" :row-count="12" />
+        <LoadingTable v-if="loading" :headers="13" :row-count="12" />
         <div v-else class="table-content">
             <div class="table-container">
                 <div class="table-responsive">
@@ -17,6 +17,9 @@
                                 <TableHead class="table-head-status text-center">Estado</TableHead>
                                 <TableHead class="table-head-status text-center">Estado IGV</TableHead>
                                 <TableHead class="table-head text-center">Tipo Pago</TableHead>
+                                <TableHead class="table-head text-center">Subtotal</TableHead>
+                                <TableHead class="table-head text-center">IGV</TableHead>
+                                <TableHead class="table-head text-center">Total</TableHead>
                                 <TableHead class="table-head-actions text-center">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -75,7 +78,10 @@
                                         {{ movement.payment_type === 'contado' ? 'Contado' : 'Crédito' }}
                                     </span>
                                 </td>
-
+                                <!-- Subtotal, IGV, Total -->
+                                <td class="cell-data text-center">{{ movement.subtotal }}</td>
+                                <td class="cell-data text-center">{{ movement.igv }}</td>
+                                <td class="cell-data text-center">{{ movement.total }}</td>
                                 <td class="cell-actions text-center">
                                     <div class="actions-container justify-center">
                                         <Button

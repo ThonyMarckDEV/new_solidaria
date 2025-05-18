@@ -1,4 +1,3 @@
-// Movements.ts
 import { Pagination } from '@/interface/paginacion';
 
 export type MovementResource = {
@@ -15,13 +14,20 @@ export type MovementResource = {
     payment_type: string;
     created_at: string;
     updated_at: string;
+    subtotal: string;
+    igv: string;
+    total: string;
     supplier?: {
         id: number;
-        name: string; // Add other supplier details here
+        name: string;
     };
     user?: {
         id: number;
-        name: string; // Add other user details here
+        name: string;
+    };
+    typemovement?: {
+        id: number;
+        name: string;
     };
 };
 
@@ -35,6 +41,9 @@ export type MovementRequest = {
     status: number;
     statustext: string;
     igv_status: number;
+    subtotal: string;
+    igv: string;
+    total: string;
 };
 
 export type showMovementResponse = {
@@ -57,6 +66,9 @@ export type MovementUpdateRequest = {
     status?: number;
     statustext?: string;
     igv_status?: number;
+    subtotal?: string;
+    igv?: string;
+    total?: string;
 };
 
 export type MovementResponse = {
