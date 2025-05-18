@@ -49,60 +49,7 @@
                             </span>
                         </span>
                         <div class="flex items-center space-x-3">
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                :disabled="currentPage === 1" 
-                                class="border-emerald-300 dark:border-blue-600 text-emerald-600 dark:text-blue-400 hover:bg-emerald-100 dark:hover:bg-blue-800 rounded-lg transition-colors duration-200"
-                                @click="goToFirstPage"
-                            >
-                                <span><<</span>
-                            </Button>
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                :disabled="currentPage === 1" 
-                                class="border-emerald-300 dark:border-blue-600 text-emerald-600 dark:text-blue-400 hover:bg-emerald-100 dark:hover:bg-blue-800 rounded-lg transition-colors duration-200"
-                                @click="goToPreviousPage"
-                            >
-                                <span><</span>
-                            </Button>
-                            <span class="text-gray-700 dark:text-gray-300 font-medium">
-                                Mostrando {{ paginatedProducts.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0 }} - {{ Math.min(currentPage * itemsPerPage, totalProducts) }} of {{ totalProducts }} productos
-                            </span>
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                :disabled="currentPage >= totalPages" 
-                                class="border-emerald-300 dark:border-blue-600 text-emerald-600 dark:text-blue-400 hover:bg-emerald-100 dark:hover:bg-blue-800 rounded-lg transition-colors duration-200"
-                                @click="goToNextPage"
-                            >
-                                <span>></span>
-                            </Button>
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                :disabled="currentPage >= totalPages" 
-                                class="border-emerald-300 dark:border-blue-600 text-emerald-600 dark:text-blue-400 hover:bg-emerald-100 dark:hover:bg-blue-800 rounded-lg transition-colors duration-200"
-                                @click="goToLastPage"
-                            >
-                                <span>>></span>
-                            </Button>
-                            <select 
-                                v-model="itemsPerPage" 
-                                class="border border-emerald-300 dark:border-blue-600 rounded-lg p-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500 dark:focus:ring-blue-500 transition-all duration-200"
-                                @change="onItemsPerPageChange"
-                            >
-                                <option value="5">5</option>
-                                <option value="10">10</option>
-                            </select>
-                            <Input 
-                                type="text" 
-                                v-model="searchQuery"
-                                placeholder="Search..." 
-                                class="w-1/4 border-emerald-300 dark:border-blue-600 rounded-lg p-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500 dark:focus:ring-blue-500 transition-all duration-200"
-                                @input="onSearch"
-                            />
+                            <SearchInput @search="onSearch" />
                         </div>
                     </div>
                     <!-- Conditional Rendering for Loading and Data Table -->
@@ -161,22 +108,12 @@
                             </TableRow>
                         </TableBody>
                     </Table>
-                    <!-- Pagination navigation for mobile -->
-                    <div v-if="!isLoading" class="flex justify-center mt-4 md:hidden">
-                        <div class="flex space-x-2">
-                            <Button 
-                                v-for="page in displayedPageNumbers" 
-                                :key="page"
-                                variant="outline" 
-                                size="sm" 
-                                :class="currentPage === page ? 
-                                    'bg-emerald-200 dark:bg-blue-700 border-emerald-400 dark:border-blue-500' : 
-                                    'border-emerald-300 dark:border-blue-600'"
-                                @click="goToPage(page)"
-                            >
-                                {{ page }}
-                            </Button>
-                        </div>
+                    <!-- Pagination -->
+                    <div v-if="!isLoading" class="mt-4">
+                        <Pagination
+                            :meta="paginationMeta"
+                            @page-change="goToPage"
+                        />
                     </div>
                     <!-- Subtotal, Tax, Total -->
                     <div v-if="!isLoading" class="flex justify-end mt-6">
@@ -227,18 +164,20 @@
 import Button from '@/components/ui/button/Button.vue';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
 import { ref, onMounted, computed, watch } from 'vue';
 import { MovementResource } from '../interface/Movement';
 import AddProductModal from './addProductModal.vue';
-import SkeletonTable from '@/components/loadingTable.vue'; // Import the skeleton table
+import SkeletonTable from '@/components/loadingTable.vue';
+import Pagination from '@/components/pagination.vue';
+import SearchInput from '@/components/filter.vue';
 import { Plus, Trash } from 'lucide-vue-next';
 import { ProductMovementServices, ProductMovement, ProductMovementResponse } from '@/services/productMovementService';
 import ConfirmDeleteModal from '@/components/delete.vue';
+import type { Pagination as PaginationMeta } from '@/interface/paginacion';
 
 const confirmDeleteModalOpen = ref(false);
 const selectedProductId = ref<number | null>(null);
-const isLoading = ref(false); // Add loading state
+const isLoading = ref(false);
 
 // Props and Emits
 const props = defineProps<{
@@ -265,8 +204,16 @@ const errorMessage = ref<string>('');
 
 // Pagination state
 const currentPage = ref<number>(1);
-const itemsPerPage = ref<number>(5);
+const itemsPerPage = ref<number>(5); // Hardcoded to 5
 const searchQuery = ref<string>('');
+
+// Pagination meta for Pagination.vue
+const paginationMeta = computed<PaginationMeta>(() => ({
+    per_page: itemsPerPage.value,
+    total: filteredProducts.value.length,
+    current_page: currentPage.value,
+    last_page: Math.max(1, Math.ceil(filteredProducts.value.length / itemsPerPage.value)),
+}));
 
 // Format date function
 const formatDate = (dateString: string) => {
@@ -313,91 +260,27 @@ const filteredProducts = computed(() => {
 // Total number of products after filtering
 const totalProducts = computed(() => filteredProducts.value.length);
 
-// Total pages calculation
-const totalPages = computed(() => {
-    return Math.max(1, Math.ceil(totalProducts.value / itemsPerPage.value));
-});
-
 // Paginated products
 const paginatedProducts = computed(() => {
     const startIndex = (currentPage.value - 1) * itemsPerPage.value;
     return filteredProducts.value.slice(startIndex, startIndex + itemsPerPage.value);
 });
 
-// Page numbers to display (for mobile pagination)
-const displayedPageNumbers = computed(() => {
-    const pages = [];
-    const maxPagesToShow = 5;
-    
-    if (totalPages.value <= maxPagesToShow) {
-        for (let i = 1; i <= totalPages.value; i++) {
-            pages.push(i);
-        }
-    } else {
-        pages.push(1);
-        
-        let startPage = Math.max(2, currentPage.value - 1);
-        let endPage = Math.min(totalPages.value - 1, currentPage.value + 1);
-        
-        if (startPage > 2) {
-            pages.push('...');
-        }
-        
-        for (let i = startPage; i <= endPage; i++) {
-            pages.push(i);
-        }
-        
-        if (endPage < totalPages.value - 1) {
-            pages.push('...');
-        }
-        
-        pages.push(totalPages.value);
-    }
-    
-    return pages;
-});
-
 // Pagination methods
 const goToPage = (page: number) => {
-    currentPage.value = page;
-};
-
-const goToFirstPage = () => {
-    currentPage.value = 1;
-};
-
-const goToLastPage = () => {
-    currentPage.value = totalPages.value;
-};
-
-const goToNextPage = () => {
-    if (currentPage.value < totalPages.value) {
-        currentPage.value++;
+    if (page >= 1 && page <= paginationMeta.value.last_page) {
+        currentPage.value = page;
     }
 };
 
-const goToPreviousPage = () => {
-    if (currentPage.value > 1) {
-        currentPage.value--;
-    }
+// Search handler
+const onSearch = (text: string) => {
+    searchQuery.value = text;
+    currentPage.value = 1; // Reset to first page on search
 };
-
-const onItemsPerPageChange = () => {
-    currentPage.value = 1;
-};
-
-const onSearch = () => {
-    currentPage.value = 1;
-};
-
-watch(filteredProducts, () => {
-    if (currentPage.value > totalPages.value) {
-        currentPage.value = Math.max(1, totalPages.value);
-    }
-});
 
 const fetchProductMovements = async () => {
-    isLoading.value = true; // Set loading to true
+    isLoading.value = true;
     try {
         const response = await ProductMovementServices.getProductMovements(props.movementData.id);
         productMovements.value = response;
@@ -408,7 +291,7 @@ const fetchProductMovements = async () => {
             ? 'Movement not found.'
             : error.response?.data?.message || 'Failed to load product movements. Please try again later.';
     } finally {
-        isLoading.value = false; // Set loading to false
+        isLoading.value = false;
     }
 };
 
@@ -444,7 +327,7 @@ const addProductFromModal = async (product: ProductMovement) => {
 
 // Remove product from the list
 const removeProduct = (id: number) => {
-    console.log('Removing product movement with id:', id); // Debug
+    console.log('Removing product movement with id:', id);
     selectedProductId.value = id;
     confirmDeleteModalOpen.value = true;
 };
