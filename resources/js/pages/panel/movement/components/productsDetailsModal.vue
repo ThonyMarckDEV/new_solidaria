@@ -105,7 +105,9 @@
                             />
                         </div>
                     </div>
-                    <Table>
+                    <!-- Conditional Rendering for Loading and Data Table -->
+                    <SkeletonTable v-if="isLoading" :headers="10" :rowCount="5" />
+                    <Table v-else>
                         <TableHeader>
                             <TableRow class="bg-emerald-100 dark:bg-blue-800">
                                 <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Tipo</TableHead>
@@ -121,7 +123,7 @@
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            <TableRow v-if="paginatedProducts.length === 0">
+                            <TableRow v-if="paginatedProducts.length === 0 && !isLoading">
                                 <td class="text-center text-gray-600 dark:text-gray-400 py-4" colspan="10">No products available.</td>
                             </TableRow>
                             <TableRow 
@@ -160,7 +162,7 @@
                         </TableBody>
                     </Table>
                     <!-- Pagination navigation for mobile -->
-                    <div class="flex justify-center mt-4 md:hidden">
+                    <div v-if="!isLoading" class="flex justify-center mt-4 md:hidden">
                         <div class="flex space-x-2">
                             <Button 
                                 v-for="page in displayedPageNumbers" 
@@ -177,7 +179,7 @@
                         </div>
                     </div>
                     <!-- Subtotal, Tax, Total -->
-                    <div class="flex justify-end mt-6">
+                    <div v-if="!isLoading" class="flex justify-end mt-6">
                         <div class="text-right">
                             <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Subtotal: {{ productMovements.subtotal }}</p>
                             <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Tax: {{ productMovements.tax }}</p>
@@ -229,12 +231,14 @@ import { Input } from '@/components/ui/input';
 import { ref, onMounted, computed, watch } from 'vue';
 import { MovementResource } from '../interface/Movement';
 import AddProductModal from './addProductModal.vue';
+import SkeletonTable from '@/components/loadingTable.vue'; // Import the skeleton table
 import { Plus, Trash } from 'lucide-vue-next';
 import { ProductMovementServices, ProductMovement, ProductMovementResponse } from '@/services/productMovementService';
 import ConfirmDeleteModal from '@/components/delete.vue';
 
 const confirmDeleteModalOpen = ref(false);
 const selectedProductId = ref<number | null>(null);
+const isLoading = ref(false); // Add loading state
 
 // Props and Emits
 const props = defineProps<{
@@ -393,6 +397,7 @@ watch(filteredProducts, () => {
 });
 
 const fetchProductMovements = async () => {
+    isLoading.value = true; // Set loading to true
     try {
         const response = await ProductMovementServices.getProductMovements(props.movementData.id);
         productMovements.value = response;
@@ -402,6 +407,8 @@ const fetchProductMovements = async () => {
         errorMessage.value = error.response?.status === 404
             ? 'Movement not found.'
             : error.response?.data?.message || 'Failed to load product movements. Please try again later.';
+    } finally {
+        isLoading.value = false; // Set loading to false
     }
 };
 
