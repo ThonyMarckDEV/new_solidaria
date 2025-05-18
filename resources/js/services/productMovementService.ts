@@ -6,7 +6,7 @@ export interface ProductMovementRequest {
     boxes: number;
     fractions: number;
     type: string;
-    lot: string;
+    batch: string;
     expiry_date: string;
     unit_price: number;
     total_price: number;
@@ -32,7 +32,6 @@ export interface ProductMovement {
         expiryDate: string;
         expiryDateDisplay: string;
         movementId: number;
-        movementTypeId: number;
         quantityStatus: number;
         quantityType: string;
         totalQuantity: string;
@@ -64,7 +63,7 @@ export const ProductMovementServices = {
             fraction_quantity: data.fractions,
             total_price: data.total_price,
             unit_price: data.unit_price,
-            batch: data.lot,
+            batch: data.batch,
             expiry_date: data.expiry_date,
             quantity_type: data.type === 'Caja' ? 1 : data.type === 'Fracción' ? 0 : 2, // 2 for 'Ambas'
             movement_id: data.movement_id,

@@ -5,19 +5,19 @@
             <div class="flex justify-between items-center mb-8">
                 <div>
                     <h2 class="text-2xl font-extrabold text-emerald-800 dark:text-blue-200 tracking-wide">
-                        Movement Details #{{ movementData.id }}
+                        Detalles del movimiento # {{ movementData.id }}
                     </h2>
                     <div class="grid grid-cols-3 gap-6 mt-4">
                         <div>
-                            <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Code</p>
+                            <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Codigo</p>
                             <p class="text-sm text-emerald-700 dark:text-blue-100 font-medium">{{ movementData.code }}</p>
                         </div>
                         <div>
-                            <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Supplier</p>
+                            <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Proveedor</p>
                             <p class="text-sm text-emerald-700 dark:text-blue-100 font-medium">{{ movementData.supplier?.name }}</p>
                         </div>
                         <div>
-                            <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Issue Date</p>
+                            <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Fecha Emision</p>
                             <p class="text-sm text-emerald-700 dark:text-blue-100 font-medium">{{ formatDate(movementData.issue_date) }}</p>
                         </div>
                     </div>
@@ -28,7 +28,7 @@
                     @click="openAddProductModal"
                 >
                     <Plus class="w-5 h-5 mr-2" />
-                    Add New
+                    Nuevo
                 </Button>
             </div>
 
@@ -39,30 +39,103 @@
 
             <!-- Table Section -->
             <div class="mb-8 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-emerald-200 dark:border-blue-700 p-6">
-                <div v-if="productMovements.data.length > 0">
-                    <h3 class="text-xl font-bold text-emerald-800 dark:text-blue-200 mb-4">Selected Products</h3>
+                <div>
+                    <div class="flex justify-between items-center mb-6">
+                        <span class="text-emerald-600 dark:text-blue-400 font-semibold">
+                            Detalle del Movimiento 
+                            <span class="ml-2 text-sm bg-emerald-100 dark:bg-blue-900 text-emerald-800 dark:text-blue-200 py-1 px-2 rounded-full">
+                                {{ totalProducts }} productos
+                            </span>
+                        </span>
+                        <div class="flex items-center space-x-3">
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                :disabled="currentPage === 1" 
+                                class="border-emerald-300 dark:border-blue-600 text-emerald-600 dark:text-blue-400 hover:bg-emerald-100 dark:hover:bg-blue-800 rounded-lg transition-colors duration-200"
+                                @click="goToFirstPage"
+                            >
+                                <span><<</span>
+                            </Button>
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                :disabled="currentPage === 1" 
+                                class="border-emerald-300 dark:border-blue-600 text-emerald-600 dark:text-blue-400 hover:bg-emerald-100 dark:hover:bg-blue-800 rounded-lg transition-colors duration-200"
+                                @click="goToPreviousPage"
+                            >
+                                <span><</span>
+                            </Button>
+                            <span class="text-gray-700 dark:text-gray-300 font-medium">
+                                Mostrando {{ paginatedProducts.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0 }} - {{ Math.min(currentPage * itemsPerPage, totalProducts) }} of {{ totalProducts }} productos
+                            </span>
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                :disabled="currentPage >= totalPages" 
+                                class="border-emerald-300 dark:border-blue-600 text-emerald-600 dark:text-blue-400 hover:bg-emerald-100 dark:hover:bg-blue-800 rounded-lg transition-colors duration-200"
+                                @click="goToNextPage"
+                            >
+                                <span>></span>
+                            </Button>
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                :disabled="currentPage >= totalPages" 
+                                class="border-emerald-300 dark:border-blue-600 text-emerald-600 dark:text-blue-400 hover:bg-emerald-100 dark:hover:bg-blue-800 rounded-lg transition-colors duration-200"
+                                @click="goToLastPage"
+                            >
+                                <span>>></span>
+                            </Button>
+                            <select 
+                                v-model="itemsPerPage" 
+                                class="border border-emerald-300 dark:border-blue-600 rounded-lg p-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500 dark:focus:ring-blue-500 transition-all duration-200"
+                                @change="onItemsPerPageChange"
+                            >
+                                <option value="5">5</option>
+                                <option value="10">10</option>
+                            </select>
+                            <Input 
+                                type="text" 
+                                v-model="searchQuery"
+                                placeholder="Search..." 
+                                class="w-1/4 border-emerald-300 dark:border-blue-600 rounded-lg p-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500 dark:focus:ring-blue-500 transition-all duration-200"
+                                @input="onSearch"
+                            />
+                        </div>
+                    </div>
                     <Table>
                         <TableHeader>
                             <TableRow class="bg-emerald-100 dark:bg-blue-800">
-                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Type</TableHead>
-                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Quantity</TableHead>
-                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Product</TableHead>
-                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Laboratory</TableHead>
-                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Batch</TableHead>
-                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Expiry</TableHead>
-                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Unit Price</TableHead>
-                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Unit Price + Tax</TableHead>
+                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Tipo</TableHead>
+                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Cantidad</TableHead>
+                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">producto</TableHead>
+                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Laboratorio</TableHead>
+                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Lote</TableHead>
+                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Fecha Expiracion</TableHead>
+                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Precio U.</TableHead>
+                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">P.U + Tax</TableHead>
                                 <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Total</TableHead>
-                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Actions</TableHead>
+                                <TableHead v-if="paginatedProducts.length > 0" class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
+                            <TableRow v-if="paginatedProducts.length === 0">
+                                <td class="text-center text-gray-600 dark:text-gray-400 py-4" colspan="10">No products available.</td>
+                            </TableRow>
                             <TableRow 
-                                v-for="product in productMovements.data" 
+                                v-for="product in paginatedProducts" 
                                 :key="product.id" 
                                 class="hover:bg-emerald-50 dark:hover:bg-blue-950 transition-colors duration-200"
                             >
-                                <td class="text-center text-gray-800 dark:text-gray-200 py-3">{{ product.quantityType }}</td>
+                                <td class="text-center text-gray-800 dark:text-gray-200 py-3">
+                                {{ 
+                                    product.quantityType === 'Box' ? 'Caja' : 
+                                    product.quantityType === 'Both' ? 'Ambos' : 
+                                    product.quantityType === 'Fraction' ? 'Fracción' : 
+                                    product.quantityType 
+                                }}
+                                </td>
                                 <td class="text-center text-gray-800 dark:text-gray-200 py-3">{{ product.totalQuantity }}</td>
                                 <td class="text-center text-gray-800 dark:text-gray-200 py-3">{{ product.productName }}</td>
                                 <td class="text-center text-gray-800 dark:text-gray-200 py-3">{{ product.labName }}</td>
@@ -85,87 +158,29 @@
                             </TableRow>
                         </TableBody>
                     </Table>
+                    <!-- Pagination navigation for mobile -->
+                    <div class="flex justify-center mt-4 md:hidden">
+                        <div class="flex space-x-2">
+                            <Button 
+                                v-for="page in displayedPageNumbers" 
+                                :key="page"
+                                variant="outline" 
+                                size="sm" 
+                                :class="currentPage === page ? 
+                                    'bg-emerald-200 dark:bg-blue-700 border-emerald-400 dark:border-blue-500' : 
+                                    'border-emerald-300 dark:border-blue-600'"
+                                @click="goToPage(page)"
+                            >
+                                {{ page }}
+                            </Button>
+                        </div>
+                    </div>
                     <!-- Subtotal, Tax, Total -->
                     <div class="flex justify-end mt-6">
                         <div class="text-right">
                             <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Subtotal: {{ productMovements.subtotal }}</p>
                             <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Tax: {{ productMovements.tax }}</p>
                             <p class="text-sm font-bold text-emerald-800 dark:text-blue-200">Total: {{ productMovements.total }}</p>
-                        </div>
-                    </div>
-                </div>
-                <div v-else>
-                    <div class="flex justify-between items-center mb-6">
-                        <span class="text-emerald-600 dark:text-blue-400 font-semibold cursor-pointer hover:underline">Movement Details</span>
-                        <div class="flex items-center space-x-3">
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                disabled 
-                                class="border-emerald-300 dark:border-blue-600 text-emerald-600 dark:text-blue-400 hover:bg-emerald-100 dark:hover:bg-blue-800 rounded-lg transition-colors duration-200"
-                            >
-                                <span><<</span>
-                            </Button>
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                disabled 
-                                class="border-emerald-300 dark:border-blue-600 text-emerald-600 dark:text-blue-400 hover:bg-emerald-100 dark:hover:bg-blue-800 rounded-lg transition-colors duration-200"
-                            >
-                                <span><</span>
-                            </Button>
-                            <span class="text-gray-700 dark:text-gray-300 font-medium">Showing 0 of 0 products</span>
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                disabled 
-                                class="border-emerald-300 dark:border-blue-600 text-emerald-600 dark:text-blue-400 hover:bg-emerald-100 dark:hover:bg-blue-800 rounded-lg transition-colors duration-200"
-                            >
-                                <span>></span>
-                            </Button>
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                disabled 
-                                class="border-emerald-300 dark:border-blue-600 text-emerald-600 dark:text-blue-400 hover:bg-emerald-100 dark:hover:bg-blue-800 rounded-lg transition-colors duration-200"
-                            >
-                                <span>>></span>
-                            </Button>
-                            <select class="border border-emerald-300 dark:border-blue-600 rounded-lg p-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500 dark:focus:ring-blue-500 transition-all duration-200">
-                                <option>10</option>
-                            </select>
-                            <Input 
-                                type="text" 
-                                placeholder="Search..." 
-                                class="w-1/4 border-emerald-300 dark:border-blue-600 rounded-lg p-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500 dark:focus:ring-blue-500 transition-all duration-200"
-                            />
-                        </div>
-                    </div>
-                    <Table>
-                        <TableHeader>
-                            <TableRow class="bg-emerald-100 dark:bg-blue-800">
-                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Type</TableHead>
-                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Quantity</TableHead>
-                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Product</TableHead>
-                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Laboratory</TableHead>
-                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Batch</TableHead>
-                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Expiry</TableHead>
-                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Unit Price</TableHead>
-                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Unit Price + Tax</TableHead>
-                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Total</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            <TableRow>
-                                <td class="text-center text-gray-600 dark:text-gray-400 py-4" colspan="9">No products available.</td>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
-                    <div class="flex justify-end mt-6">
-                        <div class="text-right">
-                            <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Subtotal: 0.00</p>
-                            <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Tax: 0.00</p>
-                            <p class="text-sm font-bold text-emerald-800 dark:text-blue-200">Total: 0.00</p>
                         </div>
                     </div>
                 </div>
@@ -180,14 +195,6 @@
                     @click="closeModal"
                 >
                     Back
-                </Button>
-                <Button
-                    type="button"
-                    :disabled="productMovements.data.length === 0"
-                    class="bg-gradient-to-r from-emerald-500 to-emerald-600 dark:from-blue-800 dark:to-blue-900 text-white font-semibold rounded-lg shadow-lg hover:from-emerald-600 hover:to-emerald-700 dark:hover:from-blue-900 dark:hover:to-blue-950 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                    @click="onSubmit"
-                >
-                    Save Products
                 </Button>
             </div>
 
@@ -207,7 +214,7 @@ import Button from '@/components/ui/button/Button.vue';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { MovementResource } from '../interface/Movement';
 import AddProductModal from './addProductModal.vue';
 import { Plus, Trash } from 'lucide-vue-next';
@@ -235,6 +242,11 @@ const productMovements = ref<ProductMovementResponse>({
 });
 const errorMessage = ref<string>('');
 
+// Pagination state
+const currentPage = ref<number>(1);
+const itemsPerPage = ref<number>(5);
+const searchQuery = ref<string>('');
+
 // Format date function
 const formatDate = (dateString: string) => {
     if (!dateString) return '';
@@ -260,12 +272,113 @@ const calculatePriceWithTax = (unitPrice: string) => {
     return (parseFloat(unitPrice) * (1 + tax)).toFixed(2);
 };
 
-// Fetch product movements
+// Filter products based on search
+const filteredProducts = computed(() => {
+    if (!searchQuery.value) return productMovements.value.data;
+    
+    const query = searchQuery.value.toLowerCase();
+    return productMovements.value.data.filter(product => 
+        product.productName.toLowerCase().includes(query) ||
+        product.labName.toLowerCase().includes(query) ||
+        product.batch.toLowerCase().includes(query) ||
+        product.quantityType.toLowerCase().includes(query)
+    );
+});
+
+// Total number of products after filtering
+const totalProducts = computed(() => filteredProducts.value.length);
+
+// Total pages calculation
+const totalPages = computed(() => {
+    return Math.max(1, Math.ceil(totalProducts.value / itemsPerPage.value));
+});
+
+// Paginated products
+const paginatedProducts = computed(() => {
+    const startIndex = (currentPage.value - 1) * itemsPerPage.value;
+    return filteredProducts.value.slice(startIndex, startIndex + itemsPerPage.value);
+});
+
+// Page numbers to display (for mobile pagination)
+const displayedPageNumbers = computed(() => {
+    const pages = [];
+    const maxPagesToShow = 5;
+    
+    if (totalPages.value <= maxPagesToShow) {
+        for (let i = 1; i <= totalPages.value; i++) {
+            pages.push(i);
+        }
+    } else {
+        pages.push(1);
+        
+        let startPage = Math.max(2, currentPage.value - 1);
+        let endPage = Math.min(totalPages.value - 1, currentPage.value + 1);
+        
+        if (startPage > 2) {
+            pages.push('...');
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            pages.push(i);
+        }
+        
+        if (endPage < totalPages.value - 1) {
+            pages.push('...');
+        }
+        
+        pages.push(totalPages.value);
+    }
+    
+    return pages;
+});
+
+// Pagination methods
+const goToPage = (page: number) => {
+    currentPage.value = page;
+};
+
+const goToFirstPage = () => {
+    currentPage.value = 1;
+};
+
+const goToLastPage = () => {
+    currentPage.value = totalPages.value;
+};
+
+const goToNextPage = () => {
+    if (currentPage.value < totalPages.value) {
+        currentPage.value++;
+    }
+};
+
+const goToPreviousPage = () => {
+    if (currentPage.value > 1) {
+        currentPage.value--;
+    }
+};
+
+const onItemsPerPageChange = () => {
+    currentPage.value = 1;
+};
+
+const onSearch = () => {
+
+    currentPage.value = 1;
+};
+
+
+watch(filteredProducts, () => {
+    if (currentPage.value > totalPages.value) {
+        currentPage.value = Math.max(1, totalPages.value);
+    }
+});
+
+
 const fetchProductMovements = async () => {
     try {
         const response = await ProductMovementServices.getProductMovements(props.movementData.id);
         productMovements.value = response;
-        errorMessage.value = response.data.length === 0 ? 'No product movements found for this movement.' : '';
+        errorMessage.value = '';
     } catch (error: any) {
         console.error('Error fetching product movements:', error);
         errorMessage.value = error.response?.status === 404
@@ -291,7 +404,7 @@ const addProductFromModal = async (product: ProductMovement) => {
         productMovements.value.data.push(product);
         updateTotals();
         await fetchProductMovements(); // Refresh to ensure consistency
-        errorMessage.value = productMovements.value.data.length === 0 ? 'No product movements found for this movement.' : '';
+        errorMessage.value = '';
     } catch (error) {
         console.error('Error adding product:', error);
         errorMessage.value = 'Failed to add product. Please try again.';
@@ -305,14 +418,17 @@ const removeProduct = async (id: number) => {
         await ProductMovementServices.deleteProductMovement(id);
         productMovements.value.data = productMovements.value.data.filter(p => p.id !== id);
         updateTotals();
-        errorMessage.value = productMovements.value.data.length === 0 ? 'No product movements found for this movement.' : '';
+        
+        // If the current page becomes empty after removal, go to the previous page
+        if (paginatedProducts.value.length === 0 && currentPage.value > 1) {
+            currentPage.value--;
+        }
     } catch (error) {
         console.error('Error deleting product movement:', error);
         errorMessage.value = 'Failed to delete product. Please try again.';
     }
 };
 
-// Update totals (fallback if backend doesn't provide them)
 const updateTotals = () => {
     const subtotal = productMovements.value.data.reduce((sum, p) => sum + parseFloat(p.totalPrice), 0);
     const tax = subtotal * 0.18; // 18% tax
@@ -322,7 +438,6 @@ const updateTotals = () => {
     productMovements.value.total = total.toFixed(2);
 };
 
-// Submit all products
 const onSubmit = () => {
     emit('add-products', props.movementData.id, productMovements.value.data);
     closeModal();
@@ -332,6 +447,8 @@ const onSubmit = () => {
 const closeModal = () => {
     productMovements.value = { success: true, message: '', data: [], subtotal: '0.00', tax: '0.00', total: '0.00' };
     errorMessage.value = '';
+    currentPage.value = 1;
+    searchQuery.value = '';
     emit('emit-close', false);
 };
 
