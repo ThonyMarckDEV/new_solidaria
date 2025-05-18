@@ -173,6 +173,21 @@ class MovementController extends Controller
                         margin-bottom: 20px;
                     }
                     
+                    .logo-container {
+                        margin-bottom: 10px;
+                    }
+                    
+                    .logo-container img {
+                        max-height: 80px;
+                        width: auto;
+                    }
+                    
+                    .company-title {
+                        font-size: 24px;
+                        font-weight: bold;
+                        margin: 10px 0;
+                    }
+                    
                     .header h1 {
                         font-size: 16px;
                         font-weight: bold;
@@ -249,7 +264,11 @@ class MovementController extends Controller
             <body>
                 <div class="container">
                     <div class="header">
-                        <h1>FACTURA DE COMPRA</h1>
+                        <div class="logo-container">
+                            <img src="' . public_path('images/boticas-solidaria-logo.png') . '" alt="Boticas Solidaria Logo">
+                        </div>
+                        <div class="company-title">BOTICAS SOLIDARIA</div>
+                        <h1>COMPROBANTE DE COMPRA</h1>
                         <h2>' . htmlspecialchars($movement->code) . '</h2>
                     </div>
                     
@@ -333,7 +352,7 @@ class MovementController extends Controller
                     </div>
                     
                     <div class="footer">
-                        <p>Representación impresa de la factura de compra</p>
+                        <p>Representación impresa del comprobante de compra</p>
                     </div>
                 </div>
             </body>
