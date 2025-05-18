@@ -180,6 +180,7 @@ export interface ProductResource {
 // Props and Emits
 const props = defineProps<{
   modal: boolean;
+  movementId: number; 
 }>();
 
 const emit = defineEmits<{
@@ -193,6 +194,8 @@ const emit = defineEmits<{
     lot: string;
     expiry_date: string;
     unit_price: number;
+    total_price: number;
+    movement_id: number;
   }): void;
 }>();
 
@@ -310,6 +313,7 @@ const onAddProduct = handleSubmit(async (values) => {
     expiry_date: values.expiry_date,
     unit_price: values.unit_price,
     total_price: values.total_price,
+    movement_id: props.movementId,
   };
 
   try {
@@ -322,10 +326,11 @@ const onAddProduct = handleSubmit(async (values) => {
       expiry_date: product.expiry_date,
       unit_price: product.unit_price,
       total_price: product.total_price,
+      movement_id: product.movement_id,
     });
 
     if (response.success) {
-      emit('add-product', product); // Emit to parent component
+      emit('add-product', product);
       resetForm();
       selectedProduct.value = null;
       selectedType.value = 'Caja';

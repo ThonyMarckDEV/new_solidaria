@@ -177,9 +177,10 @@
                 </Button>
             </div>
 
-            <!-- Add Product Modal -->
+           <!-- Add Product Modal -->
             <AddProductModal
                 :modal="addProductModalOpen"
+                :movement-id="props.movementData.id"
                 @emit-close="closeAddProductModal"
                 @add-product="addProductFromModal"
             />
