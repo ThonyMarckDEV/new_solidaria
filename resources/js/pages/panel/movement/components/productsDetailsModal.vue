@@ -136,6 +136,15 @@
                 >
                     Back
                 </Button>
+                <Button 
+                    type="button" 
+                    variant="default" 
+                    class="bg-gradient-to-r from-emerald-500 to-emerald-600 dark:from-blue-800 dark:to-blue-900 text-white font-semibold rounded-lg shadow-lg hover:from-emerald-600 hover:to-emerald-700 dark:hover:from-blue-900 dark:hover:to-blue-950 transition-all duration-300"
+                    @click="finalizeMovement"
+                    :disabled="isLoading || paginatedProducts.length === 0"
+                >
+                    Finalizar
+                </Button>
             </div>
 
             <!-- Add Product Modal -->
@@ -174,6 +183,7 @@ import { Plus, Trash } from 'lucide-vue-next';
 import { ProductMovementServices, ProductMovement, ProductMovementResponse } from '@/services/productMovementService';
 import ConfirmDeleteModal from '@/components/delete.vue';
 import type { Pagination as PaginationMeta } from '@/interface/paginacion';
+import { MovementServices } from '@/services/movementService';
 
 const confirmDeleteModalOpen = ref(false);
 const selectedProductId = ref<number | null>(null);
@@ -381,6 +391,26 @@ const updateTotals = () => {
     productMovements.value.subtotal = subtotal.toFixed(2);
     productMovements.value.tax = tax.toFixed(2);
     productMovements.value.total = total.toFixed(2);
+};
+
+// Finalize movement
+const finalizeMovement = async () => {
+    if (paginatedProducts.value.length === 0) {
+        errorMessage.value = 'No products to finalize.';
+        return;
+    }
+    isLoading.value = true;
+    try {
+        await MovementServices.finalizeMovement(props.movementData.id);
+        errorMessage.value = '';
+        emit('refresh-movements');
+        closeModal();
+    } catch (error: any) {
+        console.error('Error finalizing movement:', error);
+        errorMessage.value = error.response?.data?.message || 'Failed to finalize movement. Please try again.';
+    } finally {
+        isLoading.value = false;
+    }
 };
 
 const onSubmit = () => {

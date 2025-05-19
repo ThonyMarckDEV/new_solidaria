@@ -79,6 +79,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('movements', MovementController::class);
         # list Movements
         Route::get('listar-movements', [MovementController::class, 'listMovements'])->name('movements.listar');
+        #Finalize Movement
+        Route::post('movements/{id}/finalize', [MovementController::class, 'finalize'])->name('panel.movements.finalize');
         # module role
         Route::resource('roles', RoleController::class);
         # list roles

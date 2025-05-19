@@ -7,12 +7,16 @@ use App\Models\Movement;
 use App\Http\Requests\StoreMovementRequest;
 use App\Http\Requests\UpdateMovementRequest;
 use App\Http\Resources\MovementResource;
+use App\Models\Product_Local;
+use App\Models\ProductMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class MovementController extends Controller
@@ -135,288 +139,326 @@ class MovementController extends Controller
         ]);
     }
 
-  public function print(Movement $movement)
-{
-    try {
-        $movement->load('typemovement', 'supplier', 'user', 'product_movements.product');
+    public function finalize($id)
+    {
+        try {
+            // Find the movement
+            $movement = Movement::findOrFail($id);
 
-        // Initialize IGV rate and totals
-        $tasaIgv = 0.18;
-        $totalSubtotal = 0;
-        $totalIgv = 0;
-        $totalTotal = 0;
-
-        // Current date and time for generation
-        $generationDateTime = Carbon::now()->format('d/m/Y H:i:s');
-
-        // HTML content for the PDF - Enhanced Receipt Style
-        $html = '
-        <!DOCTYPE html>
-        <html lang="es">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Comprobante Electrónico - ' . htmlspecialchars($movement->code) . '</title>
-            <style>
-                body {
-                    font-family: Helvetica, Arial, sans-serif;
-                    font-size: 12px;
-                    line-height: 1.5;
-                    margin: 0;
-                    padding: 20px;
-                    background-color: #f9f9f9;
-                }
-                
-                .container {
-                    max-width: 650px;
-                    margin: 0 auto;
-                    background-color: #ffffff;
-                    padding: 20px;
-                    border-radius: 8px;
-                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-                }
-                
-                .top-info {
-                    display: flex;
-                    justify-content: flex-end;
-                    margin-bottom: 10px;
-                }
-                
-                .generation-datetime {
-                    font-size: 11px;
-                    color: #555;
-                }
-                
-                .header {
-                    text-align: center;
-                    background-color: #f5f5f5;
-                    padding: 15px;
-                    border-radius: 5px;
-                    margin-bottom: 20px;
-                }
-                
-                .logo-container {
-                    margin-bottom: 15px;
-                }
-                
-                .logo-container img {
-                    max-height: 100px;
-                    width: auto;
-                }
-                
-                .company-title {
-                    font-size: 28px;
-                    font-weight: bold;
-                    color: #1a3c6d;
-                    margin: 10px 0;
-                }
-                
-                .header h1 {
-                    font-size: 18px;
-                    font-weight: bold;
-                    margin: 0;
-                    color: #333;
-                }
-                
-                .header h2 {
-                    font-size: 14px;
-                    font-weight: bold;
-                    margin: 5px 0;
-                    color: #555;
-                }
-                
-                .divider {
-                    border-top: 2px solid #e0e0e0;
-                    margin: 15px 0;
-                }
-                
-                .info-row {
-                    margin: 8px 0;
-                    display: flex;
-                    justify-content: space-between;
-                }
-                
-                .info-row .label {
-                    font-weight: bold;
-                    color: #333;
-                }
-                
-                table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin: 20px 0;
-                    border: 1px solid #e0e0e0;
-                }
-                
-                table th, table td {
-                    padding: 8px;
-                    text-align: left;
-                    border-bottom: 1px solid #e0e0e0;
-                }
-                
-                table th {
-                    background-color: #f0f0f0;
-                    font-weight: bold;
-                    color: #333;
-                }
-                
-                table tr:nth-child(even) {
-                    background-color: #fafafa;
-                }
-                
-                table th:nth-child(2),
-                table td:nth-child(2),
-                table th:nth-child(3),
-                table td:nth-child(3),
-                table th:nth-child(4),
-                table td:nth-child(4) {
-                    text-align: right;
-                }
-                
-                .totals {
-                    margin-top: 15px;
-                    background-color: #f5f5f5;
-                    padding: 10px;
-                    border-radius: 5px;
-                }
-                
-                .totals div {
-                    text-align: right;
-                    margin: 5px 0;
-                    font-size: 13px;
-                    color: #333;
-                }
-                
-                .totals .total {
-                    font-weight: bold;
-                    font-size: 14px;
-                    color: #1a3c6d;
-                }
-                
-                .footer {
-                    margin-top: 30px;
-                    text-align: center;
-                    font-size: 11px;
-                    color: #777;
-                }
-                
-                .seller {
-                    margin-top: 20px;
-                    border-top: 1px solid #e0e0e0;
-                    padding-top: 10px;
-                    font-size: 12px;
-                    color: #333;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="top-info">
-                    <div class="generation-datetime">Generado: ' . htmlspecialchars($generationDateTime) . '</div>
-                </div>
-                <div class="header">
-                    <div class="logo-container">
-                        <img src="' . public_path('images/boticas-solidaria-logo.png') . '" alt="Boticas Solidaria Logo">
-                    </div>
-                    <div class="company-title">BOTICAS SOLIDARIA</div>
-                    <h1>COMPROBANTE DE COMPRA</h1>
-                    <h2>' . htmlspecialchars($movement->code) . '</h2>
-                </div>
-                
-                <div class="divider"></div>
-                
-                <div class="info-row">
-                    <span class="label">Proveedor:</span>
-                    <span>' . htmlspecialchars($movement->supplier->name) . '</span>
-                </div>
-                <div class="info-row">
-                    <span class="label">RUC:</span>
-                    <span>' . htmlspecialchars($movement->supplier->ruc ?? "—") . '</span>
-                </div>
-                <div class="info-row">
-                    <span class="label">Fecha:</span>
-                    <span>' . Carbon::parse($movement->issue_date)->format('d/m/Y H:i:s') . '</span>
-                </div>
-                
-                <div class="divider"></div>
-                
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Producto</th>
-                            <th>Cant.</th>
-                            <th>Precio</th>
-                            <th>Importe</th>
-                        </tr>
-                    </thead>
-                    <tbody>';
-
-        if ($movement->product_movements->isEmpty()) {
-            $html .= '<tr><td colspan="4" style="text-align: center;">No hay productos asociados.</td></tr>';
-        } else {
-            foreach ($movement->product_movements as $productMovement) {
-                $product = $productMovement->product;
-                $totalPrice = $productMovement->total_price ?? ($productMovement->quantity * $productMovement->unit_price);
-
-                // Calculate subtotal, IGV, and total based on igv_status
-                if ($movement->igv_status == 1) {
-                    // IGV included in total_price
-                    $subtotal = $totalPrice / (1 + $tasaIgv);
-                    $igv = $totalPrice - $subtotal;
-                    $total = $totalPrice;
-                } else {
-                    // IGV not included
-                    $subtotal = $totalPrice;
-                    $igv = $subtotal * $tasaIgv;
-                    $total = $subtotal + $igv;
-                }
-
-                // Accumulate totals
-                $totalSubtotal += $subtotal;
-                $totalIgv += $igv;
-                $totalTotal += $total;
-
-                // Display unit price adjusted for IGV status
-                $displayUnitPrice = $movement->igv_status == 1 ? $productMovement->unit_price / (1 + $tasaIgv) : $productMovement->unit_price;
-
-                $html .= '
-                    <tr>
-                        <td>' . htmlspecialchars($product->name) . '</td>
-                        <td>' . number_format($productMovement->quantity, 1) . '</td>
-                        <td>S/ ' . number_format($displayUnitPrice, 2) . '</td>
-                        <td>S/ ' . number_format($subtotal, 2) . '</td>
-                    </tr>';
+            // Check if the movement is already finalized or invalid
+            if ($movement->status !== 1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El movimiento no está en un estado válido para ser finalizado.',
+                ], 400);
             }
+
+            // Get the authenticated user's local_id
+            $localId = Auth::user()->local_id;
+            if (!$localId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El usuario no tiene local asociado.',
+                ], 400);
+            }
+
+            // Fetch all product movements for this movement
+            $productMovements = ProductMovement::where('movement_id', $id)->get();
+
+            if ($productMovements->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No hay productos encontrados para este movimiento.',
+                ], 400);
+            }
+
+            // Begin transaction
+            DB::beginTransaction();
+
+            // Update product_locals for each product movement
+            foreach ($productMovements as $productMovement) {
+                Product_Local::updateOrCreate(
+                    [
+                        'product_id' => $productMovement->product_id,
+                        'local_id' => $localId,
+                    ],
+                    [
+                        'StockBox' => DB::raw('"StockBox" + ' . (int)$productMovement->quantity),
+                        'StockFraction' => DB::raw('"StockFraction" + ' . (int)$productMovement->fraction_quantity),
+                        'stock_min' => 0,
+                        'stock_max' => 0,
+                    ]
+                );
+            }
+
+            
+            $movement->status = 3; // Finalizado
+            $movement->save();
+
+            // Commit transaction
+            DB::commit();
+
+            // Return updated movement data
+            return response()->json([
+                'success' => true,
+                'message' => 'Movement finalized successfully.',
+                'data' => $movement->load('supplier', 'user', 'typemovement'),
+            ]);
+
+        } catch (\Exception $e) {
+            // Rollback transaction on error
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to finalize movement: ' . $e->getMessage(),
+            ], 500);
         }
-
-        $html .= '
-                    </tbody>
-                </table>
-                
-                <div class="divider"></div>
-                
-                <div class="totals">
-                    <div>SUB TOTAL: S/ ' . number_format($totalSubtotal, 2) . '</div>
-                    <div>IGV: S/ ' . number_format($totalIgv, 2) . '</div>
-                    <div class="total">TOTAL VENTA: S/ ' . number_format($totalTotal, 2) . '</div>
-                </div>
-                
-                <div class="seller">
-                    <div>COMPRADOR(A): ' . htmlspecialchars($movement->user->name) . '</div>
-                </div>
-                
-                <div class="footer">
-                    <p>Representación impresa del comprobante de compra</p>
-                </div>
-            </div>
-        </body>
-        </html>';
-
-        $pdf = Pdf::loadHTML($html);
-        return $pdf->stream('comprobante_' . $movement->code . '.pdf');
-    } catch (\Exception $e) {
-        Log::error('PDF generation failed: ' . $e->getMessage());
-        return response()->json(['error' => 'Failed to generate PDF: ' . $e->getMessage()], 500);
     }
-}
+
+    public function print(Movement $movement)
+    {
+        try {
+            $movement->load('typemovement', 'supplier', 'user', 'user.local', 'product_movements.product');
+
+            $tasaIgv = 0.18;
+            $totalSubtotal = 0;
+            $totalIgv = 0;
+            $totalTotal = 0;
+
+            $generationDateTime = Carbon::now('America/Lima')->format('d/m/Y H:i:s');
+
+            $localName = $movement->user->local ? htmlspecialchars($movement->user->local->name) : '—';
+
+            $html = '
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Factura Electrónica - ' . htmlspecialchars($movement->code) . '</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        font-size: 12px;
+                        line-height: 1.4;
+                        margin: 0;
+                        padding: 20px;
+                    }
+                    
+                    .container {
+                        max-width: 600px;
+                        margin: 0 auto;
+                        position: relative;
+                    }
+                    
+                    .generation-date {
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        font-size: 11px;
+                        color: #555;
+                    }
+                    
+                    .header {
+                        text-align: center;
+                        margin-bottom: 20px;
+                        margin-top: 20px;
+                    }
+                    
+                    .logo-container {
+                        margin-bottom: 10px;
+                    }
+                    
+                    .logo-container img {
+                        max-height: 80px;
+                        width: auto;
+                    }
+                    
+                    .company-title {
+                        font-size: 24px;
+                        font-weight: bold;
+                        margin: 10px 0;
+                    }
+                    
+                    .header h1 {
+                        font-size: 16px;
+                        font-weight: bold;
+                        margin: 0;
+                        padding: 0;
+                    }
+                    
+                    .header h2 {
+                        font-size: 14px;
+                        font-weight: bold;
+                        margin: 5px 0;
+                        padding: 0;
+                    }
+                    
+                    .divider {
+                        border-top: 1px solid #000;
+                        margin: 10px 0;
+                    }
+                    
+                    .info-row {
+                        margin: 5px 0;
+                    }
+                    
+                    .info-row .label {
+                        font-weight: bold;
+                    }
+                    
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 15px 0;
+                    }
+                    
+                    table th, table td {
+                        padding: 5px;
+                        text-align: left;
+                    }
+                    
+                    table th:nth-child(2),
+                    table td:nth-child(2),
+                    table th:nth-child(3),
+                    table td:nth-child(3),
+                    table th:nth-child(4),
+                    table td:nth-child(4) {
+                        text-align: right;
+                    }
+                    
+                    .totals {
+                        margin-top: 10px;
+                    }
+                    
+                    .totals div {
+                        text-align: right;
+                        margin: 3px 0;
+                    }
+                    
+                    .totals .total {
+                        font-weight: bold;
+                    }
+                    
+                    .footer {
+                        margin-top: 30px;
+                        text-align: center;
+                        font-size: 11px;
+                    }
+                    
+                    .seller {
+                        margin-top: 20px;
+                        border-top: 1px solid #000;
+                        padding-top: 10px;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="generation-date">
+                        Fecha y hora de generación: ' . $generationDateTime . '
+                    </div>
+                    <div class="header">
+                        <div class="logo-container">
+                            <img src="' . public_path('images/boticas-solidaria-logo.png') . '" alt="Boticas Solidaria Logo">
+                        </div>
+                        <div class="company-title">BOTICAS SOLIDARIA</div>
+                        <h1>COMPROBANTE DE COMPRA</h1>
+                        <h2>' . htmlspecialchars($movement->code) . '</h2>
+                    </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <div class="info-row">
+                        <span class="label">Local:</span> ' . $localName . '
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Proveedor:</span> ' . htmlspecialchars($movement->supplier->name) . '
+                    </div>
+                    <div class="info-row">
+                        <span class="label">RUC:</span> ' . htmlspecialchars($movement->supplier->ruc ?? "—") . '
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Fecha:</span> ' . Carbon::parse($movement->issue_date)->format('d/m/Y H:i:s') . '
+                    </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Cant.</th>
+                                <th>Precio</th>
+                                <th>Importe</th>
+                            </tr>
+                        </thead>
+                        <tbody>';
+
+            if ($movement->product_movements->isEmpty()) {
+                $html .= '<tr><td colspan="4" style="text-align: center;">No hay productos asociados.</td></tr>';
+            } else {
+                foreach ($movement->product_movements as $productMovement) {
+                    $product = $productMovement->product;
+                    $totalPrice = $productMovement->total_price ?? ($productMovement->quantity * $productMovement->unit_price);
+
+                    // Calculate subtotal, IGV, and total basado en igv_status
+                    if ($movement->igv_status == 1) {
+                        // IGV incluido en precio
+                        $subtotal = $totalPrice / (1 + $tasaIgv);
+                        $igv = $totalPrice - $subtotal;
+                        $total = $totalPrice;
+                    } else {
+                        // IGV no incluido
+                        $subtotal = $totalPrice;
+                        $igv = $subtotal * $tasaIgv;
+                        $total = $subtotal + $igv;
+                    }
+
+                    $totalSubtotal += $subtotal;
+                    $totalIgv += $igv;
+                    $totalTotal += $total;
+
+                    $displayUnitPrice = $movement->igv_status == 1 ? $productMovement->unit_price / (1 + $tasaIgv) : $productMovement->unit_price;
+
+                    $html .= '
+                        <tr>
+                            <td>' . htmlspecialchars($product->name) . '</td>
+                            <td>' . number_format($productMovement->quantity, 1) . '</td>
+                            <td>S/ ' . number_format($displayUnitPrice, 2) . '</td>
+                            <td>S/ ' . number_format($subtotal, 2) . '</td>
+                        </tr>';
+                }
+            }
+
+            $html .= '
+                        </tbody>
+                    </table>
+                    
+                    <div class="divider"></div>
+                    
+                    <div class="totals">
+                        <div>SUB TOTAL: S/ ' . number_format($totalSubtotal, 2) . '</div>
+                        <div>IGV: S/ ' . number_format($totalIgv, 2) . '</div>
+                        <div class="total">TOTAL VENTA: S/ ' . number_format($totalTotal, 2) . '</div>
+                    </div>
+                    
+                    <div class="seller">
+                        <div>COMPRADOR(A): ' . htmlspecialchars($movement->user->name) . '</div>
+                    </div>
+                    
+                    <div class="footer">
+                        <p>Representación impresa del comprobante de compra</p>
+                    </div>
+                </div>
+            </body>
+            </html>';
+
+            $pdf = Pdf::loadHTML($html);
+            return $pdf->stream('factura_' . $movement->code . '.pdf');
+        } catch (\Exception $e) {
+            Log::error('PDF generation failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to generate PDF: ' . $e->getMessage()], 500);
+        }
+    }
 }

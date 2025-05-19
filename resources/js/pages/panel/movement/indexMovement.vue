@@ -76,13 +76,13 @@ const { principal, loadingMovements, getMovementById, updateMovement, deleteMove
 
 // get pagination
 const handlePageChange = (page: number) => {
-    console.log(page);
+    //console.log(page);
     loadingMovements(page);
 };
 
 // get movement by id for edit
 const getIdMovement = async (id: number) => {
-    console.log('Opening EditMovement for ID:', id);
+    //console.log('Opening EditMovement for ID:', id);
     await getMovementById(id);
     principal.statusModal.update = true;
     principal.statusModal.addProducts = false;
@@ -91,7 +91,7 @@ const getIdMovement = async (id: number) => {
 
 // Open products details modal
 const openModalProductsDetails = async (id: number) => {
-    console.log('Opening ProductsDetailsModal for ID:', id);
+    //console.log('Opening ProductsDetailsModal for ID:', id);
     await getMovementById(id);
     principal.statusModal.addProducts = true;
     principal.statusModal.update = false;
@@ -122,7 +122,7 @@ const emitUpdateMovement = (movement: MovementUpdateRequest, id_movement: number
 const openDeleteModal = (movementId: number) => {
     principal.statusModal.delete = true;
     principal.idMovement = movementId;
-    console.log('Eliminar movimiento con ID:', movementId);
+   // console.log('Eliminar movimiento con ID:', movementId);
 };
 
 // delete movement

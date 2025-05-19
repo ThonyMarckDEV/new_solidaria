@@ -1,4 +1,3 @@
-<!-- tableMovement.vue -->
 <template>
     <div class="container-table">
         <LoadingTable v-if="loading" :headers="13" :row-count="12" />
@@ -55,6 +54,11 @@
                                         <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-orange-500 dark:bg-orange-400"></span>
                                         Anulado
                                     </span>
+                                    <span v-if="movement.status === 3"
+                                          class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-purple-500 dark:bg-purple-400"></span>
+                                        Finalizado
+                                    </span>
                                 </td>
                                 <td class="cell-status text-center truncate">
                                     <span v-if="movement.igv_status === 1"
@@ -81,6 +85,7 @@
                                 <td class="cell-actions text-center">
                                     <div class="actions-container flex justify-center gap-1">
                                         <Button
+                                            v-if="movement.status === 1"
                                             variant="ghost"
                                             size="sm"
                                             class="action-button p-1"
@@ -91,6 +96,7 @@
                                             <span class="sr-only">Editar movimiento</span>
                                         </Button>
                                         <Button
+                                            v-if="movement.status !== 2 && movement.status !== 3"
                                             variant="ghost"
                                             size="sm"
                                             class="action-button p-1"
@@ -101,6 +107,7 @@
                                             <span class="sr-only">Agregar productos</span>
                                         </Button>
                                         <Button
+                                            v-if="movement.status !== 3"
                                             variant="ghost"
                                             size="sm"
                                             class="action-button p-1"
@@ -136,7 +143,7 @@
                 <PaginationMovement :meta="movementPaginate" @page-change="$emit('page-change', $event)" />
             </div>
         </div>
-        <!-- tableMovement.vue -->
+        <!-- Print Modal -->
         <PrintReceiptModal
             v-if="showPrintModal"
             :movement="selectedMovement"
