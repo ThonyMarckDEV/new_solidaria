@@ -256,7 +256,8 @@ class MovementController extends Controller
                         top: 0;
                         left: 0;
                         font-size: 11px;
-                        color: #555;
+                        color: #555 _
+
                     }
                     
                     .header {
@@ -388,8 +389,8 @@ class MovementController extends Controller
                         <thead>
                             <tr>
                                 <th>Producto</th>
-                                <th>Cant.</th>
-                                <th>Precio</th>
+                                <th>Cajas - Fracciones</th>
+                                <th>Precio U.</th>
                                 <th>Importe</th>
                             </tr>
                         </thead>
@@ -400,9 +401,9 @@ class MovementController extends Controller
             } else {
                 foreach ($movement->product_movements as $productMovement) {
                     $product = $productMovement->product;
-                    $totalPrice = $productMovement->total_price ?? ($productMovement->quantity * $productMovement->unit_price);
+                    $totalPrice = $productMovement->total_price ?? ($productMovement->quantity * $productMovement->unit_price + $productMovement->fraction_quantity * $productMovement->fraction_price);
 
-                    // Calculate subtotal, IGV, and total basado en igv_status
+                    // Calcular subtotal, IGV y total según igv_status
                     if ($movement->igv_status == 1) {
                         // IGV incluido en precio
                         $subtotal = $totalPrice / (1 + $tasaIgv);
@@ -421,10 +422,13 @@ class MovementController extends Controller
 
                     $displayUnitPrice = $movement->igv_status == 1 ? $productMovement->unit_price / (1 + $tasaIgv) : $productMovement->unit_price;
 
+                    // Formato de cantidad: cajas - fracciones
+                    $quantityDisplay = $productMovement->quantity . ' - ' . $productMovement->fraction_quantity;
+
                     $html .= '
                         <tr>
                             <td>' . htmlspecialchars($product->name) . '</td>
-                            <td>' . number_format($productMovement->quantity, 1) . '</td>
+                            <td>' . htmlspecialchars($quantityDisplay) . '</td>
                             <td>S/ ' . number_format($displayUnitPrice, 2) . '</td>
                             <td>S/ ' . number_format($subtotal, 2) . '</td>
                         </tr>';
