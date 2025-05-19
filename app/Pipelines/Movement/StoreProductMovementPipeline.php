@@ -63,20 +63,6 @@ class StoreProductMovementPipeline
                 'status' => 1,
             ]);
 
-            // // Actualizar o crear el registro en product_locals
-            // Product_Local::updateOrCreate(
-            //     [
-            //         'product_id' => $data['product_id'],
-            //         'local_id' => $localId,
-            //     ],
-            //     [
-            //         'StockBox' => DB::raw('"StockBox" + ' . $data['quantity']),
-            //         'StockFraction' => DB::raw('"StockFraction" + ' . $data['fraction_quantity']),
-            //         'stock_min' => 0,
-            //         'stock_max' => 0,
-            //     ]
-            // );
-
             DB::commit();
 
             return [
