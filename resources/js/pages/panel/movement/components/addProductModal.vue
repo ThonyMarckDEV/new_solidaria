@@ -2,7 +2,7 @@
   <Dialog :open="modal" @update:open="emit('emit-close', false)">
     <DialogContent class="sm:max-w-[425px]">
       <DialogHeader>
-        <DialogTitle>New Product Movement</DialogTitle>
+        <DialogTitle>Agregar Producto</DialogTitle>
       </DialogHeader>
 
       <!-- Form to Add Product -->
@@ -156,10 +156,10 @@ import { toTypedSchema } from '@vee-validate/zod';
 import { useForm } from 'vee-validate';
 import * as z from 'zod';
 import { ref } from 'vue';
-import { ProductMovementServices, ProductMovement , } from '@/services/productMovementService';
-import { ProductResource} from '@/pages/panel/product/interface/Product';
+import { ProductMovementServices, ProductMovement } from '@/services/productMovementService';
+import { ProductResource } from '@/pages/panel/product/interface/Product';
 
-// Props and Emits
+
 const props = defineProps<{
   modal: boolean;
   movementId: number;
@@ -170,15 +170,17 @@ const emit = defineEmits<{
   (e: 'add-product', product: ProductMovement): void;
 }>();
 
-// State
+
 const selectedProduct = ref<ProductResource | null>(null);
 const selectedType = ref<string>('Box');
 
-// Form validation schema
 const formSchema = toTypedSchema(
   z.object({
     product: z.string().min(1, 'Select a product'),
-    boxes: z.number({ message: 'Number of boxes must be a number' }).min(0, 'Number of boxes must be at least 0').optional(),
+    boxes: z
+      .number({ message: 'Number of boxes must be a number' })
+      .min(0, 'Number of boxes must be at least 0')
+      .optional(),
     fractions: z
       .number({ message: 'Number of fractions must be a number' })
       .min(0, 'Number of fractions must be at least 0')
@@ -187,10 +189,42 @@ const formSchema = toTypedSchema(
     expiry_date: z.string().min(1, 'Expiry date is required'),
     total_price: z.number({ message: 'Total price must be a number' }).min(0, 'Total price must be at least 0'),
     unit_price: z.number({ message: 'Unit price must be a number' }).min(0, 'Unit price must be at least 0'),
+  }).superRefine((data, ctx) => {
+
+    if (selectedType.value === 'Box') {
+      if (!data.boxes || data.boxes < 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['boxes'],
+          message: 'At least 1 box is required when selecting "Cajas"',
+        });
+      }
+    } else if (selectedType.value === 'Fraction') {
+      if (!data.fractions || data.fractions < 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['fractions'],
+          message: 'At least 1 fraction is required when selecting "Fracciones"',
+        });
+      }
+    } else if (selectedType.value === 'Both') {
+      if ((!data.boxes || data.boxes < 1) && (!data.fractions || data.fractions < 1)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['boxes'],
+          message: 'At least 1 box or 1 fraction is required when selecting "Ambos"',
+        });
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['fractions'],
+          message: 'At least 1 box or 1 fraction is required when selecting "Ambos"',
+        });
+      }
+    }
   })
 );
 
-// Form setup
+
 const { handleSubmit, setFieldValue, resetForm, values } = useForm({
   validationSchema: formSchema,
   initialValues: {
@@ -204,7 +238,7 @@ const { handleSubmit, setFieldValue, resetForm, values } = useForm({
   },
 });
 
-// Handle product selection
+
 const onProductSelect = (product: ProductResource | null) => {
   selectedProduct.value = product;
   selectedType.value = 'Box';
@@ -219,14 +253,13 @@ const onProductSelect = (product: ProductResource | null) => {
   }
 };
 
-// Handle boxes input
+
 const handleBoxesInput = () => {
   const boxes = values.boxes || 0;
   setFieldValue('boxes', Math.max(0, boxes));
   updateUnitPrice();
 };
 
-// Handle fractions input
 const handleFractionsInput = () => {
   if (!selectedProduct.value) return;
 
@@ -247,7 +280,7 @@ const handleFractionsInput = () => {
   updateUnitPrice();
 };
 
-// Update unit price
+
 const updateUnitPrice = () => {
   const totalPrice = parseFloat(values.total_price) || 0;
   let unitPrice = 0;
@@ -269,20 +302,23 @@ const updateUnitPrice = () => {
   setFieldValue('unit_price', unitPrice > 0 ? Number(unitPrice.toFixed(2)) : 0);
 };
 
-// Add product
+
 const onAddProduct = handleSubmit(async (values) => {
   if (!selectedProduct.value) return;
 
   const requestData = {
-      product_id: selectedProduct.value.id,
-      boxes: values.boxes || 0,
-      fractions: selectedProduct.value.state_fraction && (selectedType.value === 'Fraction' || selectedType.value === 'Both') ? (values.fractions || 0) : 0,
-      type: selectedType.value,
-      batch: values.batch,
-      expiry_date: values.expiry_date,
-      unit_price: values.unit_price,
-      total_price: values.total_price,
-      movement_id: props.movementId,
+    product_id: selectedProduct.value.id,
+    boxes: values.boxes || 0,
+    fractions:
+      selectedProduct.value.state_fraction && (selectedType.value === 'Fraction' || selectedType.value === 'Both')
+        ? values.fractions || 0
+        : 0,
+    type: selectedType.value,
+    batch: values.batch,
+    expiry_date: values.expiry_date,
+    unit_price: values.unit_price,
+    total_price: values.total_price,
+    movement_id: props.movementId,
   };
 
   try {
@@ -301,7 +337,11 @@ const onAddProduct = handleSubmit(async (values) => {
       unitPrices: `${requestData.unit_price.toFixed(2)} - ${(requestData.unit_price / (selectedProduct.value.fraction || 1)).toFixed(2)}`,
       batch: requestData.batch,
       expiryDate: requestData.expiry_date,
-      expiryDateDisplay: new Date(requestData.expiry_date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).split('/').reverse().join('-'),
+      expiryDateDisplay: new Date(requestData.expiry_date)
+        .toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        .split('/')
+        .reverse()
+        .join('-'),
       movementId: props.movementId,
       quantityStatus: requestData.type === 'Box' ? 1 : requestData.type === 'Fraction' ? 0 : 2,
       quantityType: requestData.type,
