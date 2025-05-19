@@ -82,7 +82,7 @@
                   :max="selectedProduct?.fraction"
                   min="0"
                   @input="handleFractionsInput"
-                  placeholder="Enter number of fractions"
+                  placeholder="0"
                 />
               </FormControl>
               <FormMessage />
@@ -174,6 +174,7 @@ const emit = defineEmits<{
 const selectedProduct = ref<ProductResource | null>(null);
 const selectedType = ref<string>('Box');
 
+
 const formSchema = toTypedSchema(
   z.object({
     product: z.string().min(1, 'Select a product'),
@@ -190,7 +191,6 @@ const formSchema = toTypedSchema(
     total_price: z.number({ message: 'Total price must be a number' }).min(0, 'Total price must be at least 0'),
     unit_price: z.number({ message: 'Unit price must be a number' }).min(0, 'Unit price must be at least 0'),
   }).superRefine((data, ctx) => {
-
     if (selectedType.value === 'Box') {
       if (!data.boxes || data.boxes < 1) {
         ctx.addIssue({
@@ -208,16 +208,11 @@ const formSchema = toTypedSchema(
         });
       }
     } else if (selectedType.value === 'Both') {
-      if ((!data.boxes || data.boxes < 1) && (!data.fractions || data.fractions < 1)) {
+      if (!data.boxes || data.boxes < 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['boxes'],
-          message: 'At least 1 box or 1 fraction is required when selecting "Ambos"',
-        });
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['fractions'],
-          message: 'At least 1 box or 1 fraction is required when selecting "Ambos"',
+          message: 'At least 1 box is required when selecting "Ambos"',
         });
       }
     }
@@ -254,16 +249,19 @@ const onProductSelect = (product: ProductResource | null) => {
 };
 
 
-const handleBoxesInput = () => {
-  const boxes = values.boxes || 0;
+const handleBoxesInput = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const boxes = parseInt(input.value) || 0;
   setFieldValue('boxes', Math.max(0, boxes));
   updateUnitPrice();
 };
 
-const handleFractionsInput = () => {
+
+const handleFractionsInput = (event: Event) => {
   if (!selectedProduct.value) return;
 
-  let fractions = values.fractions || 0;
+  const input = event.target as HTMLInputElement;
+  let fractions = parseInt(input.value) || 0;
   const maxFractions = selectedProduct.value.fraction;
 
   if (selectedType.value === 'Both' && fractions > maxFractions) {
@@ -275,6 +273,8 @@ const handleFractionsInput = () => {
     setFieldValue('fractions', maxFractions);
   } else if (fractions < 0) {
     setFieldValue('fractions', 0);
+  } else {
+    setFieldValue('fractions', fractions);
   }
 
   updateUnitPrice();
@@ -295,7 +295,9 @@ const updateUnitPrice = () => {
     } else if (selectedType.value === 'Fraction') {
       unitPrice = fractions > 0 ? (totalPrice / fractions) * taxFactor : 0;
     } else if (selectedType.value === 'Both') {
-      unitPrice = boxes > 0 ? (totalPrice / boxes) * taxFactor : 0;
+      // Use boxes + fractions (normalized by fraction size) for unit price
+      const totalUnits = boxes + fractions / (selectedProduct.value.fraction || 1);
+      unitPrice = totalUnits > 0 ? (totalPrice / totalUnits) * taxFactor : 0;
     }
   }
 
