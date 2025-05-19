@@ -169,40 +169,6 @@ class ProductMovementController extends Controller
         }
     }
 
-    // public function destroy(Request $request)
-    // {
-    //     try {
-    //         $validated = $request->validate([
-    //             'id' => 'required|integer|exists:product_movements,id',
-    //         ]);
-
-    //         $productMovement = ProductMovement::findOrFail($validated['id']);
-    //         $productMovement->delete();
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'Movimiento de producto eliminado exitosamente',
-    //         ], 200);
-    //     } catch (ValidationException $e) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Datos de entrada inválidos',
-    //             'errors' => $e->errors(),
-    //         ], 422);
-    //     } catch (ModelNotFoundException $e) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Movimiento de producto no encontrado',
-    //         ], 404);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Error al eliminar el movimiento de producto',
-    //             'error' => $e->getMessage(),
-    //         ], 500);
-    //     }
-    // }
-
     public function destroy(Request $request)
     {
         try {
@@ -210,39 +176,13 @@ class ProductMovementController extends Controller
                 'id' => 'required|integer|exists:product_movements,id',
             ]);
 
-            return DB::transaction(function () use ($validated) {
-                $productMovement = ProductMovement::findOrFail($validated['id']);
+            $productMovement = ProductMovement::findOrFail($validated['id']);
+            $productMovement->delete();
 
-                $user = Auth::user();
-                if (!$user || !isset($user->local_id)) {
-                    throw new \Exception('Usuario no autenticado o local_id no encontrado');
-                }
-                $localId = $user->local_id;
-
-                $productLocal = Product_Local::where('product_id', $productMovement->product_id)
-                    ->where('local_id', $localId)
-                    ->first();
-
-                if (!$productLocal) {
-                    throw new \Exception('Registro de product_local no encontrado para el producto y local especificado');
-                }
-
-                $productLocal->StockBox -= $productMovement->quantity;
-                $productLocal->StockFraction -= $productMovement->fraction_quantity;
-
-                if ($productLocal->StockBox < 0 || $productLocal->StockFraction < 0) {
-                    throw new \Exception('El stock no puede ser negativo después de la eliminación');
-                }
-
-                $productLocal->save();
-
-                $productMovement->delete();
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Movimiento de producto eliminado exitosamente',
-                ], 200);
-            });
+            return response()->json([
+                'success' => true,
+                'message' => 'Movimiento de producto eliminado exitosamente',
+            ], 200);
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
