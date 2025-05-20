@@ -4,13 +4,14 @@
         <div v-else class="table-content">
             <div class="table-container">
                 <div class="table-responsive">
-                    <Table class="w-full table-fixed">
-                        <TableHeader class="table-header-row">
+                    <!-- Tabla para PC -->
+                    <Table class="hidden md:table w-full table-fixed">
+                        <TableHeader class="table-header-row bg-gray-100 dark:bg-gray-800">
                             <TableRow>
                                 <TableHead class="table-head-id text-center w-12">ID</TableHead>
                                 <TableHead class="table-head text-center w-20">Código</TableHead>
                                 <TableHead class="table-head text-center w-24">Fecha Emisión</TableHead>
-                                <TableHead class="table-head text-center w-24">Fecha Credito</TableHead>
+                                <TableHead class="table-head text-center w-24">Fecha Crédito</TableHead>
                                 <TableHead class="table-head text-center w-28">Proveedor</TableHead>
                                 <TableHead class="table-head text-center w-24">Usuario</TableHead>
                                 <TableHead class="table-head text-center w-24">Tipo Movimiento</TableHead>
@@ -89,7 +90,7 @@
                                             variant="ghost"
                                             size="sm"
                                             class="action-button p-1"
-                                            @click="openModal(movement.id)"
+                                            personally="@click"
                                             title="Editar movimiento"
                                         >
                                             <UserPen class="action-icon h-4 w-4" />
@@ -132,10 +133,125 @@
                             </TableRow>
                         </TableBody>
                     </Table>
+
+                    <!-- Diseño apilado para móviles -->
+                    <div class="md:hidden space-y-4 px-2">
+                        <div v-for="movement in movementList" :key="movement.id" class="border rounded-lg p-3 bg-white dark:bg-gray-800 shadow-sm">
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div class="font-medium text-gray-700 dark:text-gray-200">ID</div>
+                                <div class="cell-id truncate">{{ movement.id }}</div>
+                                <div class="font-medium text-gray-700 dark:text-gray-200">Código</div>
+                                <div class="cell-data truncate">{{ movement.code }}</div>
+                                <div class="font-medium text-gray-700 dark:text-gray-200">Fecha Emisión</div>
+                                <div class="cell-data truncate">{{ formatDate(movement.issue_date) }}</div>
+                                <div class="font-medium text-gray-700 dark:text-gray-200">Fecha Crédito</div>
+                                <div class="cell-data truncate">{{ formatDate(movement.credit_date) }}</div>
+                                <div class="font-medium text-gray-700 dark:text-gray-200">Proveedor</div>
+                                <div class="cell-data truncate">{{ movement.supplier.name }}</div>
+                                <div class="font-medium text-gray-700 dark:text-gray-200">Usuario</div>
+                                <div class="cell-data truncate">{{ movement.user.name }}</div>
+                                <div class="font-medium text-gray-700 dark:text-gray-200">Tipo Movimiento</div>
+                                <div class="cell-data">
+                                    <span :class="getTypeMovementClass(movement.typemovement.name)" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium">
+                                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full"></span>
+                                        {{ movement.typemovement.name }}
+                                    </span>
+                                </div>
+                                <div class="font-medium text-gray-700 dark:text-gray-200">Estado</div>
+                                <div class="cell-status">
+                                    <span v-if="movement.status === 1" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+                                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-green-500 dark:bg-green-400"></span>
+                                        Activo
+                                    </span>
+                                    <span v-if="movement.status === 0" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">
+                                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-red-500 dark:bg-red-400"></span>
+                                        Eliminado
+                                    </span>
+                                    <span v-if="movement.status === 2" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
+                                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-orange-500 dark:bg-orange-400"></span>
+                                        Anulado
+                                    </span>
+                                    <span v-if="movement.status === 3" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-purple-500 dark:bg-green-400"></span>
+                                        Finalizado
+                                    </span>
+                                </div>
+                                <div class="font-medium text-gray-700 dark:text-gray-200">Estado IGV</div>
+                                <div class="cell-status">
+                                    <span v-if="movement.igv_status === 1" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-blue-500 dark:bg-blue-400"></span>
+                                        Con IGV
+                                    </span>
+                                    <span v-else class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-gray-500 dark:bg-gray-400"></span>
+                                        Sin IGV
+                                    </span>
+                                </div>
+                                <div class="font-medium text-gray-700 dark:text-gray-200">Tipo Pago</div>
+                                <div class="cell-data">
+                                    <span :class="getPaymentTypeClass(movement.payment_type)" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium">
+                                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full"></span>
+                                        {{ movement.payment_type === 'contado' ? 'Contado' : 'Crédito' }}
+                                    </span>
+                                </div>
+                                <div class="font-medium text-gray-700 dark:text-gray-200">Subtotal</div>
+                                <div class="cell-data truncate">{{ movement.subtotal }}</div>
+                                <div class="font-medium text-gray-700 dark:text-gray-200">IGV</div>
+                                <div class="cell-data truncate">{{ movement.igv }}</div>
+                                <div class="font-medium text-gray-700 dark:text-gray-200">Total</div>
+                                <div class="cell-data truncate">{{ movement.total }}</div>
+                            </div>
+                            <div class="mt-3 actions-container flex justify-center gap-1">
+                                <Button
+                                    v-if="movement.status === 1"
+                                    variant="ghost"
+                                    size="sm"
+                                    class="action-button p-1"
+                                    @click="openModal(movement.id)"
+                                    title="Editar movimiento"
+                                >
+                                    <UserPen class="action-icon h-4 w-4" />
+                                    <span class="sr-only">Editar movimiento</span>
+                                </Button>
+                                <Button
+                                    v-if="movement.status !== 2 && movement.status !== 3"
+                                    variant="ghost"
+                                    size="sm"
+                                    class="action-button p-1"
+                                    @click="openModalProductsDetails(movement.id)"
+                                    title="Agregar productos"
+                                >
+                                    <PackagePlus class="action-icon h-4 w-4" />
+                                    <span class="sr-only">Agregar productos</span>
+                                </Button>
+                                <Button
+                                    v-if="movement.status !== 3"
+                                    variant="ghost"
+                                    size="sm"
+                                    class="action-button p-1"
+                                    @click="openModalDelete(movement.id)"
+                                    title="Eliminar movimiento"
+                                >
+                                    <Trash class="action-icon h-4 w-4" />
+                                    <span class="sr-only">Eliminar movimiento</span>
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    class="action-button p-1"
+                                    @click="openPrintModal(movement)"
+                                    title="Imprimir comprobante"
+                                >
+                                    <Printer class="action-icon h-4 w-4" />
+                                    <span class="sr-only">Imprimir comprobante</span>
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="pagination-container">
-                <div class="pagination-summary">
+            <div class="pagination-container mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2 px-2">
+                <div class="pagination-summary text-xs text-gray-600 dark:text-gray-300">
                     Mostrando <span class="pagination-emphasis">{{ movementPaginate.from || 0 }}</span> a
                     <span class="pagination-emphasis">{{ movementPaginate.to || 0 }}</span> de
                     <span class="pagination-emphasis">{{ movementPaginate.total }}</span> movimientos
@@ -234,7 +350,7 @@ const formatDate = (dateString) => {
         
         return dateString;
     } catch (e) {
-        console.error('Error formatting date:', e);
+        console.error('Error al formatear la fecha:', e);
         return '';
     }
 };
@@ -265,7 +381,7 @@ const getTypeMovementClass = (tipoMovimiento) => {
 
 <style scoped>
 .container-table {
-    @apply w-full max-w-full overflow-x-hidden;
+    @apply w-full max-w-full overflow-x-auto;
 }
 
 .table-container {
@@ -273,7 +389,7 @@ const getTypeMovementClass = (tipoMovimiento) => {
 }
 
 .table-responsive {
-    @apply w-full overflow-x-hidden;
+    @apply w-full;
 }
 
 .table-fixed {
@@ -298,5 +414,21 @@ const getTypeMovementClass = (tipoMovimiento) => {
 
 .action-icon {
     @apply h-4 w-4;
+}
+
+.table-header-row {
+    @apply sticky top-0 z-10;
+}
+
+.pagination-container {
+    @apply mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2;
+}
+
+.pagination-summary {
+    @apply text-xs text-gray-600 dark:text-gray-300;
+}
+
+.pagination-emphasis {
+    @apply font-medium;
 }
 </style>
