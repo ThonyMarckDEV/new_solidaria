@@ -151,7 +151,7 @@
 
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import ProductCombobox from '@/components/Inputs/ProductCombobox.vue';
@@ -161,7 +161,6 @@ import * as z from 'zod';
 import { ref } from 'vue';
 import { ProductMovementServices, ProductMovement } from '@/services/productMovementService';
 import { ProductResource } from '@/pages/panel/product/interface/Product';
-
 
 const props = defineProps<{
   modal: boolean;
@@ -173,33 +172,31 @@ const emit = defineEmits<{
   (e: 'add-product', product: ProductMovement): void;
 }>();
 
-
 const selectedProduct = ref<ProductResource | null>(null);
 const selectedType = ref<string>('Box');
 
-
 const formSchema = toTypedSchema(
   z.object({
-    product: z.string().min(1, 'Select a product'),
+    product: z.string().min(1, 'Seleccione un producto'),
     boxes: z
-      .number({ message: 'Number of boxes must be a number' })
-      .min(0, 'Number of boxes must be at least 0')
+      .number({ message: 'El número de cajas debe ser un número' })
+      .min(0, 'El número de cajas debe ser al menos 0')
       .optional(),
     fractions: z
-      .number({ message: 'Number of fractions must be a number' })
-      .min(0, 'Number of fractions must be at least 0')
+      .number({ message: 'El número de fracciones debe ser un número' })
+      .min(0, 'El número de fracciones debe ser al menos 0')
       .optional(),
-    batch: z.string().min(1, 'Batch is required'),
-    expiry_date: z.string().min(1, 'Expiry date is required'),
-    total_price: z.number({ message: 'Total price must be a number' }).min(0, 'Total price must be at least 0'),
-    unit_price: z.number({ message: 'Unit price must be a number' }).min(0, 'Unit price must be at least 0'),
+    batch: z.string().min(1, 'El lote es requerido'),
+    expiry_date: z.string().min(1, 'La fecha de vencimiento es requerida'),
+    total_price: z.number({ message: 'El precio total debe ser un número' }).min(0, 'El precio total debe ser al menos 0'),
+    unit_price: z.number({ message: 'El precio unitario debe ser un número' }).min(0, 'El precio unitario debe ser al menos 0'),
   }).superRefine((data, ctx) => {
     if (selectedType.value === 'Box') {
       if (!data.boxes || data.boxes < 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['boxes'],
-          message: 'At least 1 box is required when selecting "Cajas"',
+          message: 'Se requiere al menos 1 caja cuando se selecciona "Cajas"',
         });
       }
     } else if (selectedType.value === 'Fraction') {
@@ -207,7 +204,7 @@ const formSchema = toTypedSchema(
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['fractions'],
-          message: 'At least 1 fraction is required when selecting "Fracciones"',
+          message: 'Se requiere al menos 1 fracción cuando se selecciona "Fracciones"',
         });
       }
     } else if (selectedType.value === 'Both') {
@@ -215,13 +212,12 @@ const formSchema = toTypedSchema(
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['boxes'],
-          message: 'At least 1 box is required when selecting "Ambos"',
+          message: 'Se requiere al menos 1 caja cuando se selecciona "Ambos"',
         });
       }
     }
   })
 );
-
 
 const { handleSubmit, setFieldValue, resetForm, values } = useForm({
   validationSchema: formSchema,
@@ -235,7 +231,6 @@ const { handleSubmit, setFieldValue, resetForm, values } = useForm({
     unit_price: 0,
   },
 });
-
 
 const onProductSelect = (product: ProductResource | null) => {
   selectedProduct.value = product;
@@ -251,14 +246,12 @@ const onProductSelect = (product: ProductResource | null) => {
   }
 };
 
-
 const handleBoxesInput = (event: Event) => {
   const input = event.target as HTMLInputElement;
   const boxes = parseInt(input.value) || 0;
   setFieldValue('boxes', Math.max(0, boxes));
   updateUnitPrice();
 };
-
 
 const handleFractionsInput = (event: Event) => {
   if (!selectedProduct.value) return;
@@ -283,7 +276,6 @@ const handleFractionsInput = (event: Event) => {
   updateUnitPrice();
 };
 
-
 const updateUnitPrice = () => {
   const totalPrice = parseFloat(values.total_price) || 0;
   let unitPrice = 0;
@@ -298,7 +290,6 @@ const updateUnitPrice = () => {
     } else if (selectedType.value === 'Fraction') {
       unitPrice = fractions > 0 ? (totalPrice / fractions) * taxFactor : 0;
     } else if (selectedType.value === 'Both') {
-      // Use boxes + fractions (normalized by fraction size) for unit price
       const totalUnits = boxes + fractions / (selectedProduct.value.fraction || 1);
       unitPrice = totalUnits > 0 ? (totalPrice / totalUnits) * taxFactor : 0;
     }
@@ -306,7 +297,6 @@ const updateUnitPrice = () => {
 
   setFieldValue('unit_price', unitPrice > 0 ? Number(unitPrice.toFixed(2)) : 0);
 };
-
 
 const onAddProduct = handleSubmit(async (values) => {
   if (!selectedProduct.value) return;
@@ -343,7 +333,7 @@ const onAddProduct = handleSubmit(async (values) => {
       batch: requestData.batch,
       expiryDate: requestData.expiry_date,
       expiryDateDisplay: new Date(requestData.expiry_date)
-        .toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        .toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })
         .split('/')
         .reverse()
         .join('-'),
@@ -361,7 +351,7 @@ const onAddProduct = handleSubmit(async (values) => {
     selectedType.value = 'Box';
     emit('emit-close', false);
   } catch (error) {
-    console.error('Error adding product movement:', error);
+    console.error('Error al agregar el movimiento de producto:', error);
   }
 });
 </script>
