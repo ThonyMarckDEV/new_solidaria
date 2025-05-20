@@ -1,4 +1,3 @@
-// src/services/ProductMovementService.ts
 import axios from 'axios';
 
 export interface ProductMovementRequest {
@@ -43,7 +42,7 @@ export interface ProductMovement {
 export interface ProductMovementResponse {
     success: boolean;
     message: string;
-    data: ProductMovement[];
+    data: ProductMovement['data'][];
     subtotal: string;
     tax: string;
     total: string;
@@ -52,12 +51,11 @@ export interface ProductMovementResponse {
 export interface ProductMovementDeleteResponse {
     success: boolean;
     message: string;
-    error?: string
+    error?: string;
 }
 
 export const ProductMovementServices = {
-    // Add product movement
-   async storeProductMovement(data: ProductMovementRequest): Promise<ProductMovementResponse> {
+    async storeProductMovement(data: ProductMovementRequest): Promise<ProductMovementResponse> {
         const response = await axios.post('/panel/product-movements', {
             product_id: data.product_id,
             quantity: data.boxes,
@@ -66,17 +64,36 @@ export const ProductMovementServices = {
             unit_price: data.unit_price,
             batch: data.batch,
             expiry_date: data.expiry_date,
-            quantity_type: data.type === 'Box' ? 1 : data.type === 'Fraction' ? 0 : 2, // Fixed mapping
+            quantity_type: data.type === 'Box' ? 1 : data.type === 'Fraction' ? 0 : 2,
             movement_id: data.movement_id,
         });
         return response.data;
     },
 
-    // Fetch product movements for a specific movement
+    async updateProductMovement(id: number, data: ProductMovementRequest): Promise<ProductMovementResponse> {
+        try {
+            const response = await axios.put(`/panel/product-movements/${id}`, {
+                product_id: data.product_id,
+                quantity: data.boxes,
+                fraction_quantity: data.fractions,
+                total_price: data.total_price,
+                unit_price: data.unit_price,
+                batch: data.batch,
+                expiry_date: data.expiry_date,
+                quantity_type: data.type === 'Box' ? 1 : data.type === 'Fraction' ? 0 : 2,
+                movement_id: data.movement_id,
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error updating product movement:', error);
+            throw error;
+        }
+    },
+
     async getProductMovements(movementId: number): Promise<ProductMovementResponse> {
         try {
             const response = await axios.get('/panel/listar-product-movements', {
-               params: { movementId }
+                params: { movementId }
             });
             return response.data;
         } catch (error) {
@@ -85,7 +102,6 @@ export const ProductMovementServices = {
         }
     },
 
-    // Delete a product movement
     async deleteProductMovement(id: number): Promise<ProductMovementDeleteResponse> {
         if (!id) {
             throw new Error('El ID del movimiento de producto es requerido');

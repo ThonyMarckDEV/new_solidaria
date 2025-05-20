@@ -1,4 +1,3 @@
-<!-- components/productsDetailsModal.vue -->
 <template>
     <Dialog :open="modal" @update:open="closeModal">
         <DialogContent class="sm:max-w-[100vw] sm:max-h-[100vh] h-screen w-screen p-8 bg-gradient-to-br from-white to-emerald-50 dark:from-gray-800 dark:to-blue-900">
@@ -66,7 +65,7 @@
                                 <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Precio U.</TableHead>
                                 <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">P.U + Tax</TableHead>
                                 <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Total</TableHead>
-                                <TableHead v-if="paginatedProducts.length > 0" class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Acciones</TableHead>
+                                <TableHead v-if="paginatedProducts.length > 0" class="text-center text-emerald-900 dark:text-blue dapat-text-blue-200 font-semibold">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -94,7 +93,16 @@
                                 <td class="text-center text-gray-800 dark:text-gray-200 py-3">{{ product.unitPrice }}</td>
                                 <td class="text-center text-gray-800 dark:text-gray-200 py-3">{{ calculatePriceWithTax(product.unitPrice) }}</td>
                                 <td class="text-center text-gray-800 dark:text-gray-200 py-3">{{ product.totalPrice }}</td>
-                                <td class="text-center py-3">
+                                <td class="text-center py-3 flex justify-center gap-2">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        class="text-blue-600 hover:text-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-full p-2 transition-colors duration-200"
+                                        @click="editProduct(product)"
+                                    >
+                                        <Pencil class="w-5 h-5" />
+                                        <span class="sr-only">Edit product</span>
+                                    </Button>
                                     <Button
                                         variant="ghost"
                                         size="sm"
@@ -155,6 +163,15 @@
                 @add-product="addProductFromModal"
             />
 
+            <!-- Edit Product Modal -->
+            <EditProductModal
+                :modal="editProductModalOpen"
+                :movement-id="props.movementData.id"
+                :product-to-edit="selectedProductToEdit"
+                @emit-close="closeEditProductModal"
+                @update-product="updateProductFromModal"
+            />
+
             <ConfirmDeleteModal
                 :modal="confirmDeleteModalOpen"
                 :itemId="selectedProductId"
@@ -176,10 +193,11 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components
 import { ref, onMounted, computed, watch } from 'vue';
 import { MovementResource } from '../interface/Movement';
 import AddProductModal from './addProductModal.vue';
+import EditProductModal from './editProductModal.vue';
 import SkeletonTable from '@/components/loadingTable.vue';
 import Pagination from '@/components/pagination.vue';
 import SearchInput from '@/components/filter.vue';
-import { Plus, Trash } from 'lucide-vue-next';
+import { Plus, Trash, Pencil } from 'lucide-vue-next';
 import { ProductMovementServices, ProductMovement, ProductMovementResponse } from '@/services/productMovementService';
 import ConfirmDeleteModal from '@/components/delete.vue';
 import type { Pagination as PaginationMeta } from '@/interface/paginacion';
@@ -188,8 +206,11 @@ import { MovementServices } from '@/services/movementService';
 const confirmDeleteModalOpen = ref(false);
 const selectedProductId = ref<number | null>(null);
 const isLoading = ref(false);
+const addProductModalOpen = ref(false);
+const editProductModalOpen = ref(false);
+const selectedProductToEdit = ref<ProductMovement['data'] | null>(null);
 
-// Props and Emits
+
 const props = defineProps<{
     modal: boolean;
     movementData: MovementResource;
@@ -201,7 +222,7 @@ const emit = defineEmits<{
     (e: 'refresh-movements'): void;
 }>();
 
-// State for product movements and error handling
+
 const productMovements = ref<ProductMovementResponse>({
     success: true,
     message: '',
@@ -212,12 +233,12 @@ const productMovements = ref<ProductMovementResponse>({
 });
 const errorMessage = ref<string>('');
 
-// Pagination state
+
 const currentPage = ref<number>(1);
 const itemsPerPage = ref<number>(5);
 const searchQuery = ref<string>('');
 
-// Pagination meta for Pagination.vue
+
 const paginationMeta = computed<PaginationMeta>(() => ({
     per_page: itemsPerPage.value,
     total: filteredProducts.value.length,
@@ -225,7 +246,7 @@ const paginationMeta = computed<PaginationMeta>(() => ({
     last_page: Math.max(1, Math.ceil(filteredProducts.value.length / itemsPerPage.value)),
 }));
 
-// Format date function
+
 const formatDate = (dateString: string) => {
     if (!dateString) return '';
     try {
@@ -243,7 +264,7 @@ const formatDate = (dateString: string) => {
     }
 };
 
-// Calculate price with tax
+
 const calculatePriceWithTax = (unitPrice: string) => {
     if (!unitPrice) return '0.00';
     const tax = 0.18;
@@ -254,7 +275,7 @@ const calculatePriceWithTax = (unitPrice: string) => {
     return (price * (1 + tax)).toFixed(2);
 };
 
-// Filter products based on search
+
 const filteredProducts = computed(() => {
     if (!searchQuery.value) return productMovements.value.data;
     
@@ -267,26 +288,26 @@ const filteredProducts = computed(() => {
     );
 });
 
-// Total number of products after filtering
+
 const totalProducts = computed(() => filteredProducts.value.length);
 
-// Paginated products
+
 const paginatedProducts = computed(() => {
     const startIndex = (currentPage.value - 1) * itemsPerPage.value;
     return filteredProducts.value.slice(startIndex, startIndex + itemsPerPage.value);
 });
 
-// Pagination methods
+
 const goToPage = (page: number) => {
     if (page >= 1 && page <= paginationMeta.value.last_page) {
         currentPage.value = page;
     }
 };
 
-// Search handler
+
 const onSearch = (text: string) => {
     searchQuery.value = text;
-    currentPage.value = 1; // Reset to first page on search
+    currentPage.value = 1;
 };
 
 const fetchProductMovements = async () => {
@@ -305,19 +326,28 @@ const fetchProductMovements = async () => {
     }
 };
 
-// Open Add Product Modal
+
 const openAddProductModal = () => {
     addProductModalOpen.value = true;
 };
 
-// Close Add Product Modal
+
+const editProduct = (product: ProductMovement['data']) => {
+    selectedProductToEdit.value = product;
+    editProductModalOpen.value = true;
+};
+
+
 const closeAddProductModal = () => {
     addProductModalOpen.value = false;
 };
 
-// Add product from the second modal
-const addProductModalOpen = ref(false);
-const addProductFromModal = async (product: ProductMovement) => {
+const closeEditProductModal = () => {
+    editProductModalOpen.value = false;
+    selectedProductToEdit.value = null;
+};
+
+const addProductFromModal = async (product: ProductMovement['data']) => {
     try {
         productMovements.value.data.push(product);
         updateTotals();
@@ -335,7 +365,24 @@ const addProductFromModal = async (product: ProductMovement) => {
     closeAddProductModal();
 };
 
-// Remove product from the list
+
+const updateProductFromModal = async (product: ProductMovement['data']) => {
+    try {
+        productMovements.value.data = productMovements.value.data.map(p => 
+            p.id === product.id ? product : p
+        );
+        updateTotals();
+        await fetchProductMovements();
+        errorMessage.value = '';
+        emit('refresh-movements');
+    } catch (error) {
+        console.error('Error updating product:', error);
+        errorMessage.value = 'Failed to update product. Please try again.';
+    }
+    closeEditProductModal();
+};
+
+
 const removeProduct = (id: number) => {
     console.log('Removing product movement with id:', id);
     selectedProductId.value = id;
@@ -393,7 +440,7 @@ const updateTotals = () => {
     productMovements.value.total = total.toFixed(2);
 };
 
-// Finalize movement
+
 const finalizeMovement = async () => {
     if (paginatedProducts.value.length === 0) {
         errorMessage.value = 'No products to finalize.';
@@ -422,16 +469,17 @@ const onSubmit = () => {
     closeModal();
 };
 
-// Close modal
 const closeModal = () => {
     productMovements.value = { success: true, message: '', data: [], subtotal: '0.00', tax: '0.00', total: '0.00' };
     errorMessage.value = '';
     currentPage.value = 1;
     searchQuery.value = '';
+    selectedProductToEdit.value = null;
+    editProductModalOpen.value = false;
+    addProductModalOpen.value = false;
     emit('emit-close', false);
 };
 
-// Fetch data when modal opens
 onMounted(() => {
     if (props.modal && props.movementData.id) {
         fetchProductMovements();
