@@ -1,15 +1,21 @@
 <template>
     <Dialog :open="modal" @update:open="closeModal">
         <DialogContent class="sm:max-w-[100vw] sm:max-h-[100vh] h-screen w-screen p-8 bg-gradient-to-br from-white to-emerald-50 dark:from-gray-800 dark:to-blue-900">
+            <!-- Dialog Title -->
+            <DialogTitle class="text-2xl font-extrabold text-emerald-800 dark:text-blue-200 tracking-wide">
+                Detalles del movimiento # {{ movementData.id }}
+            </DialogTitle>
+            <!-- Dialog Description -->
+            <DialogDescription class="sr-only">
+                Detalles del movimiento, incluyendo información del proveedor, fecha de emisión y lista de productos asociados.
+            </DialogDescription>
+
             <!-- Header -->
             <div class="flex justify-between items-center mb-8">
                 <div>
-                    <h2 class="text-2xl font-extrabold text-emerald-800 dark:text-blue-200 tracking-wide">
-                        Detalles del movimiento # {{ movementData.id }}
-                    </h2>
                     <div class="grid grid-cols-3 gap-6 mt-4">
                         <div>
-                            <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Codigo</p>
+                            <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Código</p>
                             <p class="text-sm text-emerald-700 dark:text-blue-100 font-medium">{{ movementData.code }}</p>
                         </div>
                         <div>
@@ -17,7 +23,7 @@
                             <p class="text-sm text-emerald-700 dark:text-blue-100 font-medium">{{ movementData.supplier?.name }}</p>
                         </div>
                         <div>
-                            <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Fecha Emision</p>
+                            <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Fecha Emisión</p>
                             <p class="text-sm text-emerald-700 dark:text-blue-100 font-medium">{{ formatDate(movementData.issue_date) }}</p>
                         </div>
                     </div>
@@ -61,16 +67,16 @@
                                 <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Producto</TableHead>
                                 <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Laboratorio</TableHead>
                                 <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Lote</TableHead>
-                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Fecha Expiracion</TableHead>
+                                <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Fecha Expiración</TableHead>
                                 <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Precio U.</TableHead>
                                 <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">P.U + Tax</TableHead>
                                 <TableHead class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Total</TableHead>
-                                <TableHead v-if="paginatedProducts.length > 0" class="text-center text-emerald-900 dark:text-blue dapat-text-blue-200 font-semibold">Acciones</TableHead>
+                                <TableHead v-if="paginatedProducts.length > 0" class="text-center text-emerald-900 dark:text-blue-200 font-semibold">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             <TableRow v-if="paginatedProducts.length === 0 && !isLoading">
-                                <td class="text-center text-gray-600 dark:text-gray-400 py-4" colspan="10">No products available.</td>
+                                <td class="text-center text-gray-600 dark:text-gray-400 py-4" colspan="10">No hay productos disponibles.</td>
                             </TableRow>
                             <TableRow 
                                 v-for="product in paginatedProducts" 
@@ -101,7 +107,7 @@
                                         @click="editProduct(product)"
                                     >
                                         <Pencil class="w-5 h-5" />
-                                        <span class="sr-only">Edit product</span>
+                                        <span class="sr-only">Editar producto</span>
                                     </Button>
                                     <Button
                                         variant="ghost"
@@ -110,7 +116,7 @@
                                         @click="removeProduct(product.id)"
                                     >
                                         <Trash class="w-5 h-5" />
-                                        <span class="sr-only">Delete product</span>
+                                        <span class="sr-only">Eliminar producto</span>
                                     </Button>
                                 </td>
                             </TableRow>
@@ -127,7 +133,7 @@
                     <div v-if="!isLoading" class="flex justify-end mt-6">
                         <div class="text-right">
                             <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Subtotal: {{ productMovements.subtotal }}</p>
-                            <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Tax: {{ productMovements.tax }}</p>
+                            <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Impuesto: {{ productMovements.tax }}</p>
                             <p class="text-sm font-bold text-emerald-800 dark:text-blue-200">Total: {{ productMovements.total }}</p>
                         </div>
                     </div>
@@ -142,7 +148,7 @@
                     class="border-emerald-300 dark:border-blue-600 text-emerald-600 dark:text-blue-400 font-semibold rounded-lg shadow-md hover:bg-emerald-100 dark:hover:bg-blue-800 transition-all duration-300"
                     @click="closeModal"
                 >
-                    Back
+                    Volver
                 </Button>
                 <Button 
                     type="button" 
@@ -188,12 +194,12 @@
 
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ref, onMounted, computed, watch } from 'vue';
 import { MovementResource } from '../interface/Movement';
 import AddProductModal from './addProductModal.vue';
-import EditProductModal from './editProductModal.vue';
+import EditProductModal from './EditProductModal.vue';
 import SkeletonTable from '@/components/loadingTable.vue';
 import Pagination from '@/components/pagination.vue';
 import SearchInput from '@/components/filter.vue';

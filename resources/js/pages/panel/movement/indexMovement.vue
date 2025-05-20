@@ -54,6 +54,7 @@ import TableMovement from './components/tableMovement.vue';
 import { MovementUpdateRequest } from './interface/Movement';
 import ProductsDetailsModal from './components/productsDetailsModal.vue';
 import { useToast } from '@/components/ui/toast';
+import { MovementResource } from './interface/Movement';
 
 const { toast } = useToast();
 
