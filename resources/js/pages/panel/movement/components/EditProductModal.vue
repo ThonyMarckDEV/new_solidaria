@@ -3,10 +3,14 @@
     <DialogContent class="sm:max-w-[425px]">
       <DialogHeader>
         <DialogTitle>Editar Producto</DialogTitle>
+        <DialogDescription class="sr-only">
+          Formulario para editar los detalles de un producto en el movimiento, incluyendo cantidad, lote, fecha de vencimiento y precios.
+        </DialogDescription>
       </DialogHeader>
 
       <!-- Form to Edit Product -->
       <form @submit.prevent="onSubmit" class="space-y-4">
+        <!-- Resto del formulario permanece igual -->
         <FormField v-slot="{ componentField }" name="product">
           <FormItem>
             <FormLabel>Producto</FormLabel>
@@ -32,7 +36,7 @@
                   v-bind="componentField"
                   min="0"
                   @input="handleBoxesInput"
-                  placeholder="Enter number of boxes"
+                  placeholder="Ingrese el número de cajas"
                 />
               </FormControl>
               <FormMessage />
@@ -45,7 +49,7 @@
             name="fractions"
           >
             <FormItem>
-              <FormLabel>Fracciones (Max {{ maxFractions }})</FormLabel>
+              <FormLabel>Fracciones (Máx {{ maxFractions }})</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -65,7 +69,7 @@
           <FormItem>
             <FormLabel>Lote *</FormLabel>
             <FormControl>
-              <Input v-bind="componentField" placeholder="Enter batch number" />
+              <Input v-bind="componentField" placeholder="Ingrese el número de lote" />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -89,7 +93,7 @@
                 type="number"
                 step="0.01"
                 v-bind="componentField"
-                placeholder="Enter total price"
+                placeholder="Ingrese el precio total"
                 @input="updateUnitPrice"
               />
             </FormControl>
@@ -109,8 +113,8 @@
 
         <!-- Footer Actions -->
         <div class="flex justify-end gap-3">
-          <Button type="button" variant="outline" @click="emit('emit-close', false)">Cancel</Button>
-          <Button type="submit">Update</Button>
+          <Button type="button" variant="outline" @click="emit('emit-close', false)">Cancelar</Button>
+          <Button type="submit">Actualizar</Button>
         </div>
       </form>
     </DialogContent>
@@ -119,7 +123,7 @@
 
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toTypedSchema } from '@vee-validate/zod';
@@ -127,6 +131,21 @@ import { useForm } from 'vee-validate';
 import * as z from 'zod';
 import { ref, watch, computed } from 'vue';
 import { ProductMovementServices, ProductMovement } from '@/services/productMovementService';
+
+// Formatear la fecha al formato yyyy-MM-dd
+const formatDateForInput = (dateString: string) => {
+  if (!dateString) return '';
+  try {
+    // Si la fecha está en formato ISO (con 'T'), tomar solo la parte de la fecha
+    if (dateString.includes('T')) {
+      return dateString.split('T')[0];
+    }
+    return dateString;
+  } catch (e) {
+    console.error('Error formatting date:', e);
+    return '';
+  }
+};
 
 const props = defineProps<{
   modal: boolean;
@@ -145,26 +164,26 @@ const maxFractions = computed(() => {
 
 const formSchema = toTypedSchema(
   z.object({
-    product: z.string().min(1, 'Product is required'),
+    product: z.string().min(1, 'El producto es requerido'),
     boxes: z
-      .number({ message: 'Number of boxes must be a number' })
-      .min(0, 'Number of boxes must be at least 0')
+      .number({ message: 'El número de cajas debe ser un número' })
+      .min(0, 'El número de cajas debe ser al menos 0')
       .optional(),
     fractions: z
-      .number({ message: 'Number of fractions must be a number' })
-      .min(0, 'Number of fractions must be at least 0')
+      .number({ message: 'El número de fracciones debe ser un número' })
+      .min(0, 'El número de fracciones debe ser al menos 0')
       .optional(),
-    batch: z.string().min(1, 'Batch is required'),
-    expiry_date: z.string().min(1, 'Expiry date is required'),
-    total_price: z.number({ message: 'Total price must be a number' }).min(0, 'Total price must be at least 0'),
-    unit_price: z.number({ message: 'Unit price must be a number' }).min(0, 'Unit price must be at least 0'),
+    batch: z.string().min(1, 'El lote es requerido'),
+    expiry_date: z.string().min(1, 'La fecha de vencimiento es requerida'),
+    total_price: z.number({ message: 'El precio total debe ser un número' }).min(0, 'El precio total debe ser al menos 0'),
+    unit_price: z.number({ message: 'El precio unitario debe ser un número' }).min(0, 'El precio unitario debe ser al menos 0'),
   }).superRefine((data, ctx) => {
     if (props.productToEdit?.quantityType === 'Box') {
       if (!data.boxes || data.boxes < 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['boxes'],
-          message: 'At least 1 box is required when type is "Cajas"',
+          message: 'Se requiere al menos 1 caja cuando el tipo es "Cajas"',
         });
       }
     } else if (props.productToEdit?.quantityType === 'Fraction') {
@@ -172,7 +191,7 @@ const formSchema = toTypedSchema(
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['fractions'],
-          message: 'At least 1 fraction is required when type is "Fracciones"',
+          message: 'Se requiere al menos 1 fracción cuando el tipo es "Fracciones"',
         });
       }
     } else if (props.productToEdit?.quantityType === 'Both') {
@@ -180,7 +199,7 @@ const formSchema = toTypedSchema(
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['boxes'],
-          message: 'At least 1 box is required when type is "Ambos"',
+          message: 'Se requiere al menos 1 caja cuando el tipo es "Ambos"',
         });
       }
     }
@@ -200,7 +219,6 @@ const { handleSubmit, setFieldValue, resetForm, values } = useForm({
   },
 });
 
-
 watch(
   () => props.productToEdit,
   (product) => {
@@ -209,7 +227,7 @@ watch(
       setFieldValue('boxes', product.quantity);
       setFieldValue('fractions', product.fractionQuantity);
       setFieldValue('batch', product.batch);
-      setFieldValue('expiry_date', product.expiryDate);
+      setFieldValue('expiry_date', formatDateForInput(product.expiryDate)); // Formatear la fecha
       setFieldValue('total_price', parseFloat(product.totalPrice));
       setFieldValue('unit_price', parseFloat(product.unitPrice));
     } else {
@@ -310,7 +328,7 @@ const onSubmit = handleSubmit(async (values) => {
     resetForm();
     emit('emit-close', false);
   } catch (error) {
-    console.error('Error updating product movement:', error);
+    console.error('Error actualizando el movimiento de producto:', error);
   }
 });
 </script>

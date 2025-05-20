@@ -3,6 +3,9 @@
     <DialogContent class="sm:max-w-[425px]">
       <DialogHeader>
         <DialogTitle>Agregar Producto</DialogTitle>
+        <DialogDescription class="sr-only">
+          Formulario para agregar un nuevo producto al movimiento, incluyendo selección de producto, cantidad, lote, fecha de vencimiento y precios.
+        </DialogDescription>
       </DialogHeader>
 
       <!-- Form to Add Product -->
@@ -61,7 +64,7 @@
                   v-bind="componentField"
                   min="0"
                   @input="handleBoxesInput"
-                  placeholder="Enter number of boxes"
+                  placeholder="Ingrese el número de cajas"
                 />
               </FormControl>
               <FormMessage />
@@ -74,7 +77,7 @@
             name="fractions"
           >
             <FormItem>
-              <FormLabel>Fracciones (Max {{ selectedProduct?.fraction }})</FormLabel>
+              <FormLabel>Fracciones (Máx {{ selectedProduct?.fraction }})</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -94,7 +97,7 @@
           <FormItem>
             <FormLabel>Lote *</FormLabel>
             <FormControl>
-              <Input v-bind="componentField" placeholder="Enter batch number" />
+              <Input v-bind="componentField" placeholder="Ingrese el número de lote" />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -118,7 +121,7 @@
                 type="number"
                 step="0.01"
                 v-bind="componentField"
-                placeholder="Enter total price"
+                placeholder="Ingrese el precio total"
                 @input="updateUnitPrice"
               />
             </FormControl>
@@ -138,8 +141,8 @@
 
         <!-- Footer Actions -->
         <div class="flex justify-end gap-3">
-          <Button type="button" variant="outline" @click="emit('emit-close', false)">Cancel</Button>
-          <Button type="submit">Save</Button>
+          <Button type="button" variant="outline" @click="emit('emit-close', false)">Cancelar</Button>
+          <Button type="submit">Guardar</Button>
         </div>
       </form>
     </DialogContent>

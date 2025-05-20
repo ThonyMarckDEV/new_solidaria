@@ -199,7 +199,7 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components
 import { ref, onMounted, computed, watch } from 'vue';
 import { MovementResource } from '../interface/Movement';
 import AddProductModal from './addProductModal.vue';
-import EditProductModal from './EditProductModal.vue';
+import EditProductModal from './editProductModal.vue';
 import SkeletonTable from '@/components/loadingTable.vue';
 import Pagination from '@/components/pagination.vue';
 import SearchInput from '@/components/filter.vue';
