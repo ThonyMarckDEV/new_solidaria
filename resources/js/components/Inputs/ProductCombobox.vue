@@ -1,17 +1,24 @@
 <template>
   <!-- Error message -->
-  <div v-if="error" class="py-2 text-sm text-red-600">Error loading products. Please try again.</div>
+  <div v-if="errorType" class="py-2 text-sm text-red-600">{{ errorMessage }}</div>
 
   <!-- Combobox -->
   <div class="relative w-full">
     <!-- Input and icons -->
     <div class="relative">
       <input
-        v-model="searchText"
+        ref="inputRef"
+        :value="modelValue"
         type="text"
         placeholder="Type to search products... (min 3 characters)"
         class="w-full rounded-md border border-gray-300 bg-white pl-10 pr-10 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-        @input="handleSearchInput"
+        :name="name"
+        :id="id"
+        :aria-describedby="ariaDescribedby"
+        :aria-invalid="ariaInvalid"
+        @input="handleInput"
+        @blur="$emit('blur', $event)"
+        @change="$emit('change', $event)"
         @focus="handleFocus"
         @keydown.enter="selectFirstProduct"
         @keydown.arrow-down.prevent="moveHighlight(1)"
@@ -56,8 +63,8 @@
     >
       <!-- Results -->
       <div
-        v-if="products.length && !isSearching"
-        v-for="(product, index) in products"
+        v-if="validProducts.length && !isSearching"
+        v-for="(product, index) in validProducts"
         :key="product.id"
         class="flex cursor-pointer items-center px-4 py-2 text-sm text-gray-900 hover:bg-gray-50"
         :class="{
@@ -92,15 +99,15 @@
 
       <!-- No results -->
       <div
-        v-else-if="!products.length && hasSearched && !isSearching"
+        v-else-if="!validProducts.length && hasSearched && !isSearching"
         class="px-4 py-3 text-sm text-gray-500 text-center"
       >
-        No products found for "{{ searchText }}"
+        No products found for "{{ modelValue }}"
       </div>
 
       <!-- Instructions -->
       <div
-        v-else-if="!hasSearched && searchText.length < 3"
+        v-else-if="!hasSearched && modelValue.length < 3"
         class="px-4 py-3 text-sm text-gray-500 text-center"
       >
         Type at least 3 characters to search
@@ -113,15 +120,39 @@
 import { ref, computed, defineExpose, onMounted, onUnmounted } from 'vue';
 import debounce from 'debounce';
 import { ProductServices } from '@/services/productService';
-import { ProductResource } from '@/pages/panel/product/interface/Product';
 
-const emit = defineEmits<{
-  (e: 'select', product: ProductResource): void;
+// Updated ProductResource interface to match API response
+interface ProductResource {
+  id: number;
+  name: string;
+  laboratory?: string;
+  fraction?: number;
+  state_fraction?: boolean;
+  state_tax?: boolean;
+  type?: string; // Added to match potential API field
+}
+
+const props = defineProps<{
+  modelValue: string;
+  name?: string;
+  id?: string;
+  initialId?: number | null;
+  ariaDescribedby?: string;
+  ariaInvalid?: boolean | string;
 }>();
 
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: string): void;
+  (e: 'select', product: ProductResource | null): void;
+  (e: 'blur', event: FocusEvent): void;
+  (e: 'input', event: Event): void;
+  (e: 'change', event: Event): void;
+}>();
+
+const inputRef = ref<HTMLInputElement | null>(null);
 const products = ref<ProductResource[]>([]);
-const searchText = ref<string>('');
-const error = ref<boolean>(false);
+const errorType = ref<boolean>(false);
+const errorMessage = ref<string>('Error loading products. Please try again.');
 const isSearching = ref<boolean>(false);
 const selectedProduct = ref<ProductResource | null>(null);
 const isOpen = ref<boolean>(false);
@@ -129,8 +160,34 @@ const highlightedIndex = ref<number>(-1);
 const hasSearched = ref<boolean>(false);
 
 const shouldShowDropdown = computed(() => {
-  return searchText.value.length >= 3 || hasSearched.value || isSearching.value;
+  return props.modelValue.length >= 3 || hasSearched.value || isSearching.value;
 });
+
+// Filter valid products to prevent rendering invalid items
+const validProducts = computed(() => {
+  return products.value.filter((product): product is ProductResource => 
+    product !== null && 
+    typeof product === 'object' && 
+    'id' in product && 
+    'name' in product && 
+    typeof product.id === 'number' && 
+    typeof product.name === 'string'
+  );
+});
+
+// Helper function to create a proper input event for vee-validate
+const createInputEvent = (value: string): Event => {
+  if (inputRef.value) {
+    inputRef.value.value = value;
+    const event = new Event('input', { bubbles: true });
+    Object.defineProperty(event, 'target', {
+      value: inputRef.value,
+      writable: false
+    });
+    return event;
+  }
+  return new Event('input');
+};
 
 const searchProducts = async (query: string) => {
   if (query.length < 3) {
@@ -141,15 +198,19 @@ const searchProducts = async (query: string) => {
 
   try {
     isSearching.value = true;
-    error.value = false;
-    
+    errorType.value = false;
     const response = await ProductServices.getProducts(query);
-    products.value = response.products || [];
+   // console.log('API Response:', response); // Debug API response
+    products.value = Array.isArray(response.products) ? response.products : [];
     hasSearched.value = true;
-    
+    if (!products.value.length) {
+      errorType.value = true;
+      errorMessage.value = 'No products found for the query.';
+    }
   } catch (e) {
     console.error('Error searching products:', e);
-    error.value = true;
+    errorType.value = true;
+    errorMessage.value = 'Failed to load products. Please try again.';
     products.value = [];
   } finally {
     isSearching.value = false;
@@ -160,56 +221,67 @@ const debouncedSearch = debounce((query: string) => {
   searchProducts(query);
 }, 500);
 
-const handleSearchInput = () => {
+const handleInput = (event: Event) => {
+  const value = (event.target as HTMLInputElement).value;
+  emit('update:modelValue', value);
+  emit('input', event);
   highlightedIndex.value = -1;
-  
-  if (searchText.value.length < 3) {
+
+  if (value.length < 3) {
     products.value = [];
     hasSearched.value = false;
     isOpen.value = false;
     return;
   }
-  
+
   isOpen.value = true;
-  debouncedSearch(searchText.value);
+  debouncedSearch(value);
 };
 
 const handleFocus = () => {
-  if (searchText.value.length >= 3) {
+  if (props.modelValue.length >= 3) {
     isOpen.value = true;
   }
 };
 
-const selectProduct = (product: ProductResource) => {
+const selectProduct = (product: ProductResource | null) => {
+  if (!product || !product.name || typeof product.id !== 'number') {
+    console.warn('Invalid product selected:', product);
+    return;
+  }
+
   selectedProduct.value = product;
-  searchText.value = product.name;
+  emit('update:modelValue', product.name);
+  emit('select', product);
+  
+  const inputEvent = createInputEvent(product.name);
+  emit('change', inputEvent);
+  
   isOpen.value = false;
   highlightedIndex.value = -1;
-  emit('select', product);
 };
 
 const selectFirstProduct = () => {
-  if (products.value.length && highlightedIndex.value >= 0) {
-    selectProduct(products.value[highlightedIndex.value]);
-  } else if (products.value.length) {
-    selectProduct(products.value[0]);
+  if (validProducts.value.length && highlightedIndex.value >= 0) {
+    selectProduct(validProducts.value[highlightedIndex.value]);
+  } else if (validProducts.value.length) {
+    selectProduct(validProducts.value[0]);
   }
 };
 
 const moveHighlight = (direction: number) => {
-  if (!products.value.length) return;
-  
-  const maxIndex = products.value.length - 1;
+  if (!validProducts.value.length) return;
+
+  const maxIndex = validProducts.value.length - 1;
   let newIndex = highlightedIndex.value + direction;
 
   if (newIndex < 0) newIndex = maxIndex;
   if (newIndex > maxIndex) newIndex = 0;
 
   highlightedIndex.value = newIndex;
-  
 
   const dropdown = document.querySelector('.max-h-60');
-  const highlightedElement = dropdown?.children[highlightedIndex.value];
+  const highlightedElement = dropdown?.children[highlightedIndex.value] as HTMLElement;
   if (highlightedElement) {
     highlightedElement.scrollIntoView({ block: 'nearest' });
   }
@@ -218,21 +290,23 @@ const moveHighlight = (direction: number) => {
 const closeDropdown = () => {
   isOpen.value = false;
   highlightedIndex.value = -1;
-  
-
   if (selectedProduct.value) {
-    searchText.value = selectedProduct.value.name;
+    emit('update:modelValue', selectedProduct.value.name);
   }
 };
 
 const clearSelection = () => {
   selectedProduct.value = null;
-  searchText.value = '';
+  emit('update:modelValue', '');
+  emit('select', null);
+  
+  const inputEvent = createInputEvent('');
+  emit('change', inputEvent);
+  
   products.value = [];
   hasSearched.value = false;
   isOpen.value = false;
   highlightedIndex.value = -1;
-  emit('select', null as any);
 };
 
 const reset = () => {
@@ -246,8 +320,21 @@ const handleClickOutside = (event: Event) => {
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
   document.addEventListener('click', handleClickOutside);
+  if (props.initialId) {
+    try {
+      const response = await ProductServices.getProductById(props.initialId);
+      console.log('Initial product response:', response); // Debug initialId response
+      if (response.product && response.product.name && typeof response.product.id === 'number') {
+        selectedProduct.value = response.product;
+        emit('update:modelValue', response.product.name);
+        emit('select', response.product);
+      }
+    } catch (e) {
+      console.error('Error loading product by initialId:', e);
+    }
+  }
 });
 
 onUnmounted(() => {
@@ -259,11 +346,9 @@ defineExpose({ reset });
 </script>
 
 <style scoped>
-
 .transition-all {
   transition: all 0.2s ease-in-out;
 }
-
 
 .max-h-60 {
   max-height: 15rem;
