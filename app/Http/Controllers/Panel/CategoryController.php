@@ -11,7 +11,7 @@ use App\Imports\CategoryImport;
 use App\Models\Category;
 use App\Pipelines\FilterByName;
 use Illuminate\Http\Request;
-use Illuminate\Pipeline\Pipeline;
+use Illuminate\Support\Facades\Pipeline;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -36,14 +36,14 @@ class CategoryController extends Controller
 
         try {
             $name = $request->get('name');
-            $categories = app(Pipeline::class)
+            $categories = Pipeline::send($name)
                 ->send(Category::query())
                 ->through([
                     new FilterByName($name),
                 ])
-                ->thenReturn()->orderBy('id','asc')->paginate(12);
+                ->thenReturn()->orderBy('id', 'asc')->paginate(12);
             return response()->json([
-                'categories'=> CategoryResource::collection($categories),
+                'categories' => CategoryResource::collection($categories),
                 'pagination' => [
                     'total' => $categories->total(),
                     'current_page' => $categories->currentPage(),
@@ -74,12 +74,19 @@ class CategoryController extends Controller
      */
     public function store(StoreCategoryRequest $request)
     {
-        Gate::authorize('create', Category::class);
-        $validated = $request->validated();
-        $validated = $request->safe()->except(['status']);
-        $category = Category::create(Arr::except($validated, ['status']));
-        // // $validated['status'] = $validated['status'] === 'activo' ? true : false;
-        return redirect()->route('panel.categories.index')->with('message', 'Categoría creada correctamente');   
+
+        try {
+            Gate::authorize('create', Category::class);
+            $validated = $request->validated();
+            $validated = $request->safe()->except(['status']);
+            $category = Category::create(Arr::except($validated, ['status']));
+            // // $validated['status'] = $validated['status'] === 'activo' ? true : false;
+            return redirect()->route('panel.categories.index')->with('message', 'Categoría creada correctamente');
+        } catch (\Throwable $th) {
+            return redirect()->back()->withErrors([
+                'message' => 'Error al crear la categoría: ' . $th->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -138,7 +145,7 @@ class CategoryController extends Controller
         ]);
 
         Excel::import(new CategoryImport, $request->file('archivo'));
-        
+
         return response()->json([
             'message' => 'Importación de categorias realizado correctamente',
         ]);

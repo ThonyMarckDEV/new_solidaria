@@ -17,13 +17,13 @@ class CustomerFactory extends Factory
     public function definition(): array
     {
         return [
-            'code' => $this->faker->unique()->numerify('CUST-####'),
+            'code' => $this->faker->unique()->numerify('CUST-######'),
             'firstname' => $this->faker->firstName(),
             'lastname' => $this->faker->lastName(),
             'address' => $this->faker->address(),
             'phone' => $this->faker->numerify('#########'),
             'birthdate' => $this->faker->date(),
-            'client_type_id' => $this->faker->numberBetween(1, 3),
+            'client_type_id' => $this->faker->numberBetween(1, 2),
         ];
     }
 }

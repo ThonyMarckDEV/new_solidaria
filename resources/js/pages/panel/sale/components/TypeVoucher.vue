@@ -5,12 +5,12 @@
             <Label for="option-one">Factura</Label>
         </div>
         <div class="flex items-center space-x-2">
-            <RadioGroupItem id="option-two" value="2" />
-            <Label for="option-two">Boleta</Label>
+            <RadioGroupItem id="option-tree" value="2" />
+            <Label for="option-tree">Tikcket</Label>
         </div>
         <div class="flex items-center space-x-2">
-            <RadioGroupItem id="option-tree" value="3" />
-            <Label for="option-tree">Tikcket</Label>
+            <RadioGroupItem id="option-two" value="3" />
+            <Label for="option-two">Boleta</Label>
         </div>
     </RadioGroup>
 </template>
@@ -34,8 +34,8 @@ const props = defineProps<{
 const handleSelection = (value: string) => {
     const paymentMap: Record<string, TypeVoucher> = {
         '1': { id: 1, name: 'Factura' },
-        '2': { id: 2, name: 'Boleta' },
-        '3': { id: 3, name: 'Tikcket' },
+        '2': { id: 2, name: 'Tikcket' },
+        '3': { id: 3, name: 'Boleta' },
     };
 
     if (value in paymentMap) {
